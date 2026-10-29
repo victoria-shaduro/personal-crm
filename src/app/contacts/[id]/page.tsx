@@ -22,6 +22,13 @@ import { getContact, getContactNotes, parseContactId } from "@/lib/contacts";
 import { formatDate, formatDateTime, toTelHref } from "@/lib/format";
 import { cn } from "cn";
 
+// Note stripes take turns through the landing threads
+const NOTE_STRIPES = [
+  "border-thread-peach",
+  "border-thread-olive",
+  "border-thread-lavender",
+] as const;
+
 export async function generateMetadata({
   params,
 }: PageProps<"/contacts/[id]">): Promise<Metadata> {
@@ -61,18 +68,16 @@ async function ContactDetails({
 
   return (
     <>
-      <Card>
+      <Card className="shadow-card-mobile sm:shadow-card">
         <CardHeader className="gap-x-4">
           <div className="flex min-w-0 items-center gap-4">
             <ContactAvatar id={contact.id} name={contact.name} size="lg" />
             <div className="grid min-w-0 gap-1">
               <CardTitle>
-                <h1 className="text-xl font-semibold tracking-tight break-words">
-                  {contact.name}
-                </h1>
+                <h1 className="break-words">{contact.name}</h1>
               </CardTitle>
               {contact.about ? (
-                <CardDescription className="text-base">
+                <CardDescription className="sm:text-base">
                   {contact.about}
                 </CardDescription>
               ) : null}
@@ -81,7 +86,10 @@ async function ContactDetails({
           <CardAction>
             <Link
               href={`/contacts/${contact.id}/edit`}
-              className={cn(buttonVariants({ variant: "outline" }), "px-3")}
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "max-sm:w-11 max-sm:px-0",
+              )}
             >
               <PencilIcon aria-hidden />
               {/* Icon-only on phones so the name has room */}
@@ -90,12 +98,12 @@ async function ContactDetails({
           </CardAction>
         </CardHeader>
         <CardContent>
-          <dl className="grid gap-x-6 gap-y-4 border-t pt-4 sm:grid-cols-2">
+          <dl className="grid gap-x-6 gap-y-4 rounded-xs bg-surface-inset p-4 sm:grid-cols-2">
             <Detail label="Телефон">
               {contact.phone ? (
                 <a
                   href={toTelHref(contact.phone)}
-                  className="underline-offset-4 hover:underline"
+                  className="font-mono text-sm text-mono-foreground underline-offset-4 hover:underline"
                 >
                   {contact.phone}
                 </a>
@@ -105,7 +113,7 @@ async function ContactDetails({
               {contact.email ? (
                 <a
                   href={`mailto:${contact.email}`}
-                  className="break-all underline-offset-4 hover:underline"
+                  className="font-mono text-sm break-all text-mono-foreground underline-offset-4 hover:underline"
                 >
                   {contact.email}
                 </a>
@@ -119,10 +127,14 @@ async function ContactDetails({
         </CardContent>
       </Card>
 
-      <section aria-labelledby="notes-heading" className="grid gap-4">
-        <h2 id="notes-heading" className="text-lg font-semibold tracking-tight">
+      {/* The extra top margin keeps the card glow off the heading */}
+      <section aria-labelledby="notes-heading" className="mt-4 grid gap-4 sm:mt-6">
+        <h2
+          id="notes-heading"
+          className="flex items-baseline gap-3 font-display text-title font-semibold"
+        >
           Заметки
-          <span className="ml-2 text-base font-normal text-muted-foreground">
+          <span className="font-mono text-sm font-medium text-subtle-foreground">
             {contactNotes.length}
           </span>
         </h2>
@@ -130,7 +142,7 @@ async function ContactDetails({
         <NoteForm action={addNote.bind(null, contact.id)} />
 
         {contactNotes.length === 0 ? (
-          <p className="rounded-xl border border-dashed bg-background px-4 py-8 text-center text-sm text-muted-foreground">
+          <p className="rounded-sm border border-border-strong bg-card px-4 py-8 text-center text-sm text-muted-foreground">
             Заметок пока нет. Запишите, о чём говорили и о чём договорились.
           </p>
         ) : (
@@ -138,15 +150,18 @@ async function ContactDetails({
             {contactNotes.map((note) => (
               <li
                 key={note.id}
-                className="rounded-xl border bg-background px-4 py-3"
+                className={cn(
+                  "border-l-3 bg-surface-raised px-4 py-3.5",
+                  NOTE_STRIPES[note.id % NOTE_STRIPES.length],
+                )}
               >
                 <time
                   dateTime={note.createdAt.toISOString()}
-                  className="text-xs text-muted-foreground"
+                  className="font-mono text-xs text-subtle-foreground"
                 >
                   {formatDateTime(note.createdAt)}
                 </time>
-                <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap">
+                <p className="mt-1.5 break-words whitespace-pre-wrap">
                   {note.body}
                 </p>
               </li>
@@ -170,9 +185,11 @@ function Detail({
   children: ReactNode;
 }) {
   return (
-    <div className={cn("grid gap-1", className)}>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm break-words">
+    <div className={cn("grid gap-1.5", className)}>
+      <dt className="font-mono text-xs font-medium tracking-wider text-muted-foreground uppercase">
+        {label}
+      </dt>
+      <dd className="break-words">
         {children ?? <span className="text-muted-foreground">—</span>}
       </dd>
     </div>
@@ -182,21 +199,21 @@ function Detail({
 function ContactSkeleton() {
   return (
     <div className="grid gap-5" aria-busy="true" aria-label="Загружаем контакт">
-      <div className="rounded-xl bg-background p-4 ring-1 ring-foreground/10">
+      <div className="rounded-sm border border-border-strong bg-card p-5 sm:p-7">
         <div className="flex items-center gap-4">
-          <div className="size-14 animate-pulse rounded-full bg-muted" />
+          <div className="size-14 animate-pulse rounded-full bg-muted sm:size-15" />
           <div className="grid gap-2">
-            <div className="h-5 w-48 animate-pulse rounded bg-muted" />
-            <div className="h-4 w-64 animate-pulse rounded bg-muted" />
+            <div className="h-7 w-48 animate-pulse rounded-xs bg-muted" />
+            <div className="h-4 w-64 animate-pulse rounded-xs bg-muted" />
           </div>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className="h-9 animate-pulse rounded bg-muted" />
+            <div key={index} className="h-11 animate-pulse rounded-xs bg-muted" />
           ))}
         </div>
       </div>
-      <div className="h-24 animate-pulse rounded-xl bg-muted" />
+      <div className="h-24 animate-pulse rounded-xs bg-muted" />
     </div>
   );
 }

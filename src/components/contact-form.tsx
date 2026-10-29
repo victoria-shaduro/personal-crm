@@ -70,7 +70,7 @@ export function ContactForm({
       {state.message ? (
         <p
           role="alert"
-          className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="border-l-3 border-destructive bg-destructive/10 px-3.5 py-3 text-sm text-destructive"
         >
           {state.message}
         </p>
@@ -82,7 +82,6 @@ export function ContactForm({
           placeholder="Например, Анна Смирнова"
           autoComplete="off"
           autoFocus={autoFocusName}
-          className="h-9"
         />
       </FormField>
 
@@ -95,7 +94,6 @@ export function ContactForm({
           {...fieldProps("about")}
           placeholder="Например, дизайнер, подруга сестры"
           autoComplete="off"
-          className="h-9"
         />
       </FormField>
 
@@ -119,7 +117,6 @@ export function ContactForm({
             inputMode="tel"
             placeholder="+7 900 123-45-67"
             autoComplete="off"
-            className="h-9"
           />
         </FormField>
 
@@ -130,18 +127,21 @@ export function ContactForm({
             inputMode="email"
             placeholder="name@example.com"
             autoComplete="off"
-            className="h-9"
           />
         </FormField>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 pt-1">
-        <Button type="submit" size="lg" disabled={pending} className="px-4">
+      <div className="flex flex-wrap items-center gap-1 pt-1">
+        <Button type="submit" size="lg" disabled={pending} className="max-sm:w-full">
           {pending ? "Сохраняем…" : submitLabel}
         </Button>
         <Link
           href={cancelHref}
-          className={buttonVariants({ variant: "ghost", size: "lg" })}
+          className={buttonVariants({
+            variant: "ghost",
+            size: "lg",
+            className: "max-sm:w-full",
+          })}
         >
           Отмена
         </Link>
@@ -164,7 +164,7 @@ function FormField({
   children: ReactNode;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-2.5">
       <Label htmlFor={field}>
         {label}
         {required ? (

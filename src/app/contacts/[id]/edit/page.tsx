@@ -35,9 +35,7 @@ async function EditContact({ params }: Pick<PageProps<"/contacts/[id]/edit">, "p
       <Card>
         <CardHeader>
           <CardTitle>
-            <h1 className="text-xl font-semibold tracking-tight">
-              Изменить контакт
-            </h1>
+            <h1>Изменить контакт</h1>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -62,11 +60,11 @@ async function EditContact({ params }: Pick<PageProps<"/contacts/[id]/edit">, "p
 function EditFormSkeleton() {
   return (
     <div className="grid gap-5" aria-busy="true" aria-label="Загружаем контакт">
-      <div className="h-5 w-40 animate-pulse rounded bg-muted" />
-      <div className="grid gap-5 rounded-xl bg-background p-4 ring-1 ring-foreground/10">
-        <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="h-11 w-40 animate-pulse rounded-xs bg-muted" />
+      <div className="grid gap-5 rounded-sm border border-border-strong bg-card p-5 sm:p-7">
+        <div className="h-8 w-56 animate-pulse rounded-xs bg-muted" />
         {Array.from({ length: 4 }, (_, index) => (
-          <div key={index} className="h-14 animate-pulse rounded bg-muted" />
+          <div key={index} className="h-16 animate-pulse rounded-xs bg-muted" />
         ))}
       </div>
     </div>

@@ -16,7 +16,7 @@ export function ContactList({
   highlightedId: number | null;
 }) {
   return (
-    <ul className="divide-y overflow-hidden rounded-xl border bg-background">
+    <ul className="divide-y divide-border-strong overflow-hidden rounded-sm border border-border-strong bg-card">
       {contacts.map((contact) => (
         <ContactRow
           key={contact.id}
@@ -40,16 +40,18 @@ function ContactRow({
       <Link
         href={`/contacts/${contact.id}`}
         className={cn(
-          "flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none",
-          highlighted && "bg-amber-50 hover:bg-amber-100/70",
+          "flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-none sm:gap-4 sm:px-5",
+          highlighted && "bg-primary/10 hover:bg-primary/15",
         )}
       >
         <ContactAvatar id={contact.id} name={contact.name} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="truncate font-medium">{contact.name}</span>
+            <span className="truncate font-display text-xl leading-snug font-semibold">
+              {contact.name}
+            </span>
             {highlighted ? (
-              <span className="shrink-0 rounded-full bg-amber-200/70 px-2 py-0.5 text-xs font-medium text-amber-900">
+              <span className="shrink-0 rounded-xs bg-primary px-1.5 py-0.5 font-mono text-xs leading-none font-bold tracking-wide text-primary-foreground uppercase">
                 новый
               </span>
             ) : null}
@@ -60,7 +62,7 @@ function ContactRow({
             </div>
           ) : null}
         </div>
-        <div className="hidden shrink-0 text-right text-sm text-muted-foreground sm:block">
+        <div className="hidden shrink-0 text-right font-mono text-xs leading-5 text-mono-foreground sm:block">
           {contact.phone ? <div>{contact.phone}</div> : null}
           {contact.email ? (
             <div className="max-w-56 truncate">{contact.email}</div>

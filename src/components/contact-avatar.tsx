@@ -2,16 +2,11 @@ import { cn } from "cn";
 
 import { getInitials } from "@/lib/format";
 
+// The three landing threads; the lavender one is the landing's contact card avatar
 const PALETTE = [
-  "bg-rose-100 text-rose-800",
-  "bg-amber-100 text-amber-800",
-  "bg-lime-100 text-lime-800",
-  "bg-emerald-100 text-emerald-800",
-  "bg-cyan-100 text-cyan-800",
-  "bg-sky-100 text-sky-800",
-  "bg-indigo-100 text-indigo-800",
-  "bg-violet-100 text-violet-800",
-  "bg-fuchsia-100 text-fuchsia-800",
+  "border-thread-olive bg-thread-olive/15 text-foreground",
+  "border-thread-peach bg-thread-peach/15 text-foreground",
+  "border-thread-lavender bg-avatar text-avatar-foreground",
 ] as const;
 
 export function ContactAvatar({
@@ -27,9 +22,9 @@ export function ContactAvatar({
     <span
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full font-medium select-none",
+        "inline-flex shrink-0 items-center justify-center rounded-full border-2 font-mono font-bold select-none",
         PALETTE[id % PALETTE.length],
-        size === "lg" ? "size-14 text-lg" : "size-9 text-sm",
+        size === "lg" ? "size-14 text-base sm:size-15 sm:text-lg" : "size-10 text-sm",
       )}
     >
       {getInitials(name)}

@@ -40,7 +40,7 @@ export function NoteForm({ action }: NoteFormProps) {
         defaultValue={state.body}
         placeholder="О чём поговорили, о чём договорились…"
         rows={3}
-        className="min-h-24 bg-background"
+        className="min-h-24 bg-card"
         aria-invalid={state.error ? true : undefined}
         aria-describedby={state.error ? "note-body-error" : undefined}
         onKeyDown={submitOnModEnter}
@@ -51,10 +51,10 @@ export function NoteForm({ action }: NoteFormProps) {
         </p>
       ) : null}
       <div className="flex items-center justify-end gap-3">
-        <span className="hidden text-xs text-muted-foreground sm:inline">
+        <span className="hidden font-mono text-xs text-subtle-foreground sm:inline">
           Ctrl/⌘ + Enter — сохранить
         </span>
-        <Button type="submit" size="lg" disabled={pending} className="px-4">
+        <Button type="submit" size="lg" disabled={pending} className="max-sm:w-full">
           {pending ? "Сохраняем…" : "Добавить заметку"}
         </Button>
       </div>

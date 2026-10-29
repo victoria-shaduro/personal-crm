@@ -1,9 +1,10 @@
 "use client";
 
-import { Loader2Icon, SearchIcon, XIcon } from "lucide-react";
+import { Loader2Icon, XIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
+import { ThreadSearchIcon } from "@/components/icons";
 import { Input } from "@/components/ui/input";
 
 const SEARCH_DELAY_MS = 250;
@@ -51,10 +52,7 @@ export function ContactSearch() {
       className="relative"
       onSubmit={(event) => event.preventDefault()}
     >
-      <SearchIcon
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-      />
+      <ThreadSearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2" />
       <Input
         name="q"
         value={value}
@@ -63,20 +61,20 @@ export function ContactSearch() {
         aria-label="Найти контакт по имени"
         autoComplete="off"
         enterKeyHint="search"
-        className="h-10 bg-background pr-10 pl-9 md:text-base"
+        className="h-12 bg-card pr-12 pl-11"
       />
-      <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center">
+      <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center">
         {isPending ? (
           <Loader2Icon
             aria-label="Ищем…"
-            className="mr-1 size-4 animate-spin text-muted-foreground"
+            className="mr-2.5 size-5 animate-spin text-muted-foreground"
           />
         ) : value ? (
           <button
             type="button"
             aria-label="Очистить поиск"
             onClick={() => setValue("")}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex size-10 items-center justify-center rounded-xs text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <XIcon className="size-4" />
           </button>
@@ -89,15 +87,12 @@ export function ContactSearch() {
 export function ContactSearchFallback() {
   return (
     <div className="relative">
-      <SearchIcon
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-      />
+      <ThreadSearchIcon className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2" />
       <Input
         disabled
         placeholder="Найти по имени"
         aria-label="Найти контакт по имени"
-        className="h-10 bg-background pl-9 md:text-base"
+        className="h-12 bg-card pl-11"
       />
     </div>
   );
