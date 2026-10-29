@@ -14,6 +14,7 @@ import {
   type ContactFormState,
   type NoteFormState,
 } from "@/lib/contact-form";
+import { logDbError } from "@/lib/log-db-error";
 
 const SAVE_FAILED_MESSAGE =
   "Не получилось сохранить. Проверьте, что запущен Docker Desktop с базой данных, и попробуйте ещё раз.";
@@ -37,7 +38,7 @@ export async function createContact(
       .returning({ id: contacts.id });
     createdId = created.id;
   } catch (error) {
-    console.error("Failed to create contact", error);
+    logDbError("Failed to create contact", error);
     return { message: SAVE_FAILED_MESSAGE };
   }
 
@@ -69,7 +70,7 @@ export async function updateContact(
       return { message: "Контакт не найден." };
     }
   } catch (error) {
-    console.error("Failed to update contact", { contactId, error });
+    logDbError("Failed to update contact", error, { contactId });
     return { message: SAVE_FAILED_MESSAGE };
   }
 
@@ -108,7 +109,7 @@ export async function addNote(
       return { body, error: "Контакт не найден." };
     }
   } catch (error) {
-    console.error("Failed to add note", { contactId, error });
+    logDbError("Failed to add note", error, { contactId });
     return { body, error: SAVE_FAILED_MESSAGE };
   }
 
