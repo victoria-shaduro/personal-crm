@@ -67,3 +67,7 @@
 | `pnpm db:seed` | заполняет пустую базу тестовыми контактами |
 | `pnpm build` | собирает приложение и проверяет код на ошибки |
 | `pnpm lint`, `pnpm typecheck` | проверки кода |
+
+## Лендинг
+
+Лендинг «Узелка» — отдельный репозиторий [personal-crm-landing](https://github.com/victoria-shaduro/personal-crm-landing).
