@@ -12,7 +12,11 @@ if (!databaseUrl) {
 
 // Reuse one connection pool across hot reloads in development
 const globalForDb = globalThis as unknown as { pgClient?: postgres.Sql };
-const client = globalForDb.pgClient ?? postgres(databaseUrl, { max: 10 });
+const client = globalForDb.pgClient ?? postgres(databaseUrl, {
+  max: 10,
+  connect_timeout: 5,
+  connection: { statement_timeout: 5000 },
+});
 if (process.env.NODE_ENV !== "production") {
   globalForDb.pgClient = client;
 }

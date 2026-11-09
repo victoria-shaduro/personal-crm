@@ -1,0 +1,62 @@
+x-logging: &logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-app: &app
+  image: ${IMAGE:?IMAGE must be a commit-tagged GHCR image}
+  environment:
+    DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in the server .env}
+  logging: *logging
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  db:
+    image: postgres:18-bookworm@sha256:f1ea2a1a4fb7b68d4836be1fdcb8a6466a89b072158bf9d97663600538c294c5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in the server .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the server .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in the server .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *logging
+
+  app:
+    <<: *app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    init: true
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/health', {signal: AbortSignal.timeout(8000)}).then(async r => {const b = await r.json(); process.exit(r.status === 200 && b.status === 'ok' && b.revision === process.env.APP_REVISION ? 0 : 1)}).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 10s
+      start_period: 15s
+      retries: 6
+
+  migrate:
+    <<: *app
+    profiles: [tools]
+    command: ["node", "deploy/migrate.mjs"]
+
+  seed:
+    <<: *app
+    profiles: [tools]
+    command: ["./node_modules/.bin/tsx", "scripts/seed.ts"]
+
+volumes:
+  postgres-data:
