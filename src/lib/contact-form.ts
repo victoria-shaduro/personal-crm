@@ -69,3 +69,5 @@ export function readContactForm(formData: FormData): ContactFormValues {
     email: read("email"),
   };
 }
+
+export type DeleteContactState = { message?: string };

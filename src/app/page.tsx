@@ -77,6 +77,10 @@ async function ContactListSection({
         <ContactList contacts={items} highlightedId={added?.id ?? null} />
       )}
 
+      {firstParam(params.deleted) === "1" ? (
+        <FlashToast message="Контакт удалён" param="deleted" />
+      ) : null}
+
       {added ? (
         <FlashToast
           message={`Контакт «${added.name}» добавлен`}
