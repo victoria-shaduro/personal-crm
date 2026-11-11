@@ -12,6 +12,7 @@ import {
   noteSchema,
   readContactForm,
   type ContactFormState,
+  type DeleteContactState,
   type NoteFormState,
 } from "@/lib/contact-form";
 import { logDbError } from "@/lib/log-db-error";
@@ -115,4 +116,26 @@ export async function addNote(
 
   revalidatePath(`/contacts/${contactId}`);
   return { savedAt: Date.now() };
+}
+
+export async function deleteContact(
+  contactId: number,
+  _previousState: DeleteContactState,
+  _formData: FormData,
+): Promise<DeleteContactState> {
+  void _previousState;
+  void _formData;
+  if (!contactIdSchema.safeParse(contactId).success) {
+    return { message: "Контакт не найден." };
+  }
+  try {
+    const [deleted] = await db.delete(contacts)
+      .where(eq(contacts.id, contactId)).returning({ id: contacts.id });
+    if (!deleted) return { message: "Контакт не найден." };
+  } catch (error) {
+    logDbError("Failed to delete contact", error, { contactId });
+    return { message: "Не получилось удалить контакт. Попробуйте ещё раз." };
+  }
+  revalidatePath("/", "layout");
+  redirect("/?deleted=1");
 }

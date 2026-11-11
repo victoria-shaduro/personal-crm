@@ -7,6 +7,7 @@ import { Suspense, type ReactNode } from "react";
 import { addNote } from "@/app/contacts/actions";
 import { BackLink } from "@/components/back-link";
 import { ContactAvatar } from "@/components/contact-avatar";
+import { DeleteContact } from "@/components/delete-contact";
 import { FlashToast } from "@/components/flash-toast";
 import { NoteForm } from "@/components/note-form";
 import { buttonVariants } from "@/components/ui/button";
@@ -83,7 +84,7 @@ async function ContactDetails({
               ) : null}
             </div>
           </div>
-          <CardAction>
+          <CardAction className="flex items-center gap-2">
             <Link
               href={`/contacts/${contact.id}/edit`}
               className={cn(
@@ -95,6 +96,7 @@ async function ContactDetails({
               {/* Icon-only on phones so the name has room */}
               <span className="max-sm:sr-only">Изменить</span>
             </Link>
+            <DeleteContact id={contact.id} name={contact.name} />
           </CardAction>
         </CardHeader>
         <CardContent>
