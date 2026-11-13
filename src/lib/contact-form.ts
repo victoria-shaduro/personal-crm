@@ -71,3 +71,6 @@ export function readContactForm(formData: FormData): ContactFormValues {
 }
 
 export type DeleteContactState = { message?: string };
+
+export type KeepInTouchFormState = { error?: string; savedAt?: number };
+export type MarkContactedState = { error?: string; savedAt?: number };

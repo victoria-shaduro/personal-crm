@@ -10,6 +10,7 @@ import { ContactAvatar } from "@/components/contact-avatar";
 import { DeleteContact } from "@/components/delete-contact";
 import { FlashToast } from "@/components/flash-toast";
 import { NoteForm } from "@/components/note-form";
+import { KeepInTouchForm } from "@/components/keep-in-touch-form";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -20,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getContact, getContactNotes, parseContactId } from "@/lib/contacts";
-import { formatDate, formatDateTime, toTelHref } from "@/lib/format";
+import { formatDate, formatDateTime, formatPlannedContactDate, toTelHref } from "@/lib/format";
 import { cn } from "cn";
 
 // Note stripes take turns through the landing threads
@@ -70,7 +71,7 @@ async function ContactDetails({
   return (
     <>
       <Card className="shadow-card-mobile sm:shadow-card">
-        <CardHeader className="gap-x-4">
+        <CardHeader className="gap-x-4 max-sm:has-data-[slot=card-action]:grid-cols-1">
           <div className="flex min-w-0 items-center gap-4">
             <ContactAvatar id={contact.id} name={contact.name} size="lg" />
             <div className="grid min-w-0 gap-1">
@@ -84,7 +85,7 @@ async function ContactDetails({
               ) : null}
             </div>
           </div>
-          <CardAction className="flex items-center gap-2">
+          <CardAction className="flex items-center gap-2 max-sm:col-start-1 max-sm:row-start-2 max-sm:mt-3 max-sm:row-span-1">
             <Link
               href={`/contacts/${contact.id}/edit`}
               className={cn(
@@ -125,7 +126,15 @@ async function ContactDetails({
               {contact.howWeMet}
             </Detail>
             <Detail label="В контактах с">{formatDate(contact.createdAt)}</Detail>
+            {contact.keepInTouchIntervalDays !== null && contact.nextContactAt ? (
+              <Detail label="Связаться">
+                <time dateTime={contact.nextContactAt.toISOString()}>
+                  {formatPlannedContactDate(contact.nextContactAt)}
+                </time>
+              </Detail>
+            ) : null}
           </dl>
+          <KeepInTouchForm id={contact.id} intervalDays={contact.keepInTouchIntervalDays} />
         </CardContent>
       </Card>
 

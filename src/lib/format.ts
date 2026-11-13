@@ -14,6 +14,17 @@ const dateTimeFormat = new Intl.DateTimeFormat("ru-RU", {
 
 const pluralRules = new Intl.PluralRules("ru-RU");
 
+const plannedContactDateFormat = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Asia/Novosibirsk",
+});
+
+export function formatPlannedContactDate(date: Date): string {
+  return plannedContactDateFormat.format(date);
+}
+
 export function formatDate(date: Date): string {
   return dateFormat.format(date);
 }
