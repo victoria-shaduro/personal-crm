@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   pgTable,
@@ -16,6 +18,8 @@ export const contacts = pgTable(
     howWeMet: text("how_we_met"),
     phone: text("phone"),
     email: text("email"),
+    keepInTouchIntervalDays: integer("keep_in_touch_interval_days"),
+    nextContactAt: timestamp("next_contact_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -23,7 +27,16 @@ export const contacts = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("contacts_name_idx").on(table.name)],
+  (table) => [
+    index("contacts_name_idx").on(table.name),
+    index("contacts_next_contact_at_id_idx").on(table.nextContactAt, table.id),
+    check("contacts_keep_in_touch_check", sql`
+      (${table.keepInTouchIntervalDays} IS NULL AND ${table.nextContactAt} IS NULL)
+      OR (${table.keepInTouchIntervalDays} IS NOT NULL
+        AND ${table.keepInTouchIntervalDays} IN (7, 30, 90, 365)
+        AND ${table.nextContactAt} IS NOT NULL)
+    `),
+  ],
 );
 
 // Notes are append-only entries written after a conversation

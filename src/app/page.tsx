@@ -4,13 +4,15 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { ContactList } from "@/components/contact-list";
+import { KeepInTouchList } from "@/components/keep-in-touch-list";
+import { connection } from "next/server";
 import {
   ContactSearch,
   ContactSearchFallback,
 } from "@/components/contact-search";
 import { FlashToast } from "@/components/flash-toast";
 import { buttonVariants } from "@/components/ui/button";
-import { listContacts, parseContactId } from "@/lib/contacts";
+import { listContacts, listKeepInTouchContacts, parseContactId } from "@/lib/contacts";
 import { pluralize } from "@/lib/format";
 
 // The layout's title template skips its own segment, so the name is spelled out
@@ -39,6 +41,13 @@ export default function ContactsPage({ searchParams }: PageProps<"/">) {
         </Link>
       </div>
 
+      <section aria-labelledby="keep-in-touch-heading" className="grid gap-4">
+        <h2 id="keep-in-touch-heading" className="font-display text-title font-semibold">Пора связаться</h2>
+        <Suspense fallback={<p aria-busy="true" className="text-sm text-muted-foreground">Загружаем запланированные контакты…</p>}>
+          <KeepInTouchSection />
+        </Suspense>
+      </section>
+
       <Suspense fallback={<ContactSearchFallback />}>
         <ContactSearch />
       </Suspense>
@@ -48,6 +57,12 @@ export default function ContactsPage({ searchParams }: PageProps<"/">) {
       </Suspense>
     </div>
   );
+}
+
+async function KeepInTouchSection() {
+  await connection();
+  const contacts = await listKeepInTouchContacts();
+  return <KeepInTouchList contacts={contacts} />;
 }
 
 async function ContactListSection({

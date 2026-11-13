@@ -14,8 +14,11 @@ import {
   type ContactFormState,
   type DeleteContactState,
   type NoteFormState,
+  type KeepInTouchFormState,
+  type MarkContactedState,
 } from "@/lib/contact-form";
 import { logDbError } from "@/lib/log-db-error";
+import { isKeepInTouchInterval, nextContactDate } from "@/lib/keep-in-touch";
 
 const SAVE_FAILED_MESSAGE =
   "Не получилось сохранить. Проверьте, что запущен Docker Desktop с базой данных, и попробуйте ещё раз.";
@@ -96,16 +99,7 @@ export async function addNote(
   }
 
   try {
-    const added = await db.transaction(async (tx) => {
-      const [touched] = await tx
-        .update(contacts)
-        .set({ updatedAt: new Date() })
-        .where(eq(contacts.id, contactId))
-        .returning({ id: contacts.id });
-      if (!touched) return false;
-      await tx.insert(notes).values({ contactId, body: parsed.data });
-      return true;
-    });
+    const added = await recordCommunicationNote(contactId, parsed.data);
     if (!added) {
       return { body, error: "Контакт не найден." };
     }
@@ -115,6 +109,76 @@ export async function addNote(
   }
 
   revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/");
+  return { savedAt: Date.now() };
+}
+
+async function recordCommunicationNote(contactId: number, body: string) {
+  return db.transaction(async (tx) => {
+    const [contact] = await tx.select().from(contacts)
+      .where(eq(contacts.id, contactId)).for("update");
+    if (!contact) return false;
+    const now = new Date();
+    await tx.insert(notes).values({ contactId, body, createdAt: now });
+    await tx.update(contacts).set({
+      updatedAt: now,
+      nextContactAt: contact.keepInTouchIntervalDays === null
+        ? null : nextContactDate(now, contact.keepInTouchIntervalDays),
+    }).where(eq(contacts.id, contactId));
+    return true;
+  });
+}
+
+export async function updateKeepInTouch(
+  contactId: number,
+  _previousState: KeepInTouchFormState,
+  formData: FormData,
+): Promise<KeepInTouchFormState> {
+  if (!contactIdSchema.safeParse(contactId).success) return { error: "Контакт не найден." };
+  const value = formData.get("intervalDays");
+  if (typeof value !== "string" || !["", "7", "30", "90", "365"].includes(value)) {
+    return { error: "Выберите частоту из списка." };
+  }
+  const interval = value === "" ? null : Number(value);
+  if (interval !== null && !isKeepInTouchInterval(interval)) return { error: "Выберите частоту из списка." };
+  try {
+    const updated = await db.transaction(async (tx) => {
+      const [contact] = await tx.select({ id: contacts.id }).from(contacts)
+        .where(eq(contacts.id, contactId)).for("update");
+      if (!contact) return false;
+      const now = new Date();
+      await tx.update(contacts).set({
+        keepInTouchIntervalDays: interval,
+        nextContactAt: interval === null ? null : nextContactDate(now, interval),
+        updatedAt: now,
+      }).where(eq(contacts.id, contactId));
+      return true;
+    });
+    if (!updated) return { error: "Контакт не найден." };
+  } catch (error) {
+    logDbError("Failed to update keep-in-touch schedule", error, { contactId });
+    return { error: SAVE_FAILED_MESSAGE };
+  }
+  revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/");
+  return { savedAt: Date.now() };
+}
+
+export async function markContacted(
+  contactId: number,
+  _previousState: MarkContactedState,
+  _formData: FormData,
+): Promise<MarkContactedState> {
+  void _formData;
+  if (!contactIdSchema.safeParse(contactId).success) return { error: "Контакт не найден." };
+  try {
+    if (!await recordCommunicationNote(contactId, "Связались")) return { error: "Контакт не найден." };
+  } catch (error) {
+    logDbError("Failed to mark contact as contacted", error, { contactId });
+    return { error: SAVE_FAILED_MESSAGE };
+  }
+  revalidatePath(`/contacts/${contactId}`);
+  revalidatePath("/");
   return { savedAt: Date.now() };
 }
 

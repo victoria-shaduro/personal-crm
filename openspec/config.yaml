@@ -1,0 +1,17 @@
+schema: spec-driven
+
+context: |
+  Language: Russian
+  All artifacts must be written in Russian.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  This is a personal CRM for people the owner knows personally.
+  Follow the project instructions in AGENTS.md.
+  Read specs/01-продуктовая-идея.md for the product idea, main scenario, and constraints.
+  Existing feature requirements live in openspec/specs/; setup and deployment are in README.md.
+  The owner makes product decisions. Ask about missing requirements instead of inventing behavior.
+  Keep code, technical identifiers, comments, errors, logs, and Git metadata in English.
+  User-facing interface text is in Russian.
+
+rules:
+  tasks:
+    - Include manual checks for the specification's acceptance criteria.
