@@ -4,19 +4,23 @@ import Link from "next/link";
 import {
   startTransition,
   useActionState,
+  useId,
   type FormEvent,
   type ReactNode,
 } from "react";
 
+import { GroupOptions } from "@/components/group-options";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import type {
   ContactField,
   ContactFormState,
   ContactFormValues,
 } from "@/lib/contact-form";
+import type { GroupOption } from "@/lib/groups";
 
 const EMPTY_VALUES: ContactFormValues = {
   name: "",
@@ -32,6 +36,8 @@ type ContactFormProps = {
     formData: FormData,
   ) => Promise<ContactFormState>;
   initialValues?: ContactFormValues;
+  groups: GroupOption[];
+  initialGroupId?: number | null;
   submitLabel: string;
   cancelHref: string;
   autoFocusName?: boolean;
@@ -40,11 +46,14 @@ type ContactFormProps = {
 export function ContactForm({
   action,
   initialValues = EMPTY_VALUES,
+  groups,
+  initialGroupId,
   submitLabel,
   cancelHref,
   autoFocusName = false,
 }: ContactFormProps) {
   const [state, formAction, pending] = useActionState(action, {});
+  const groupInputId = useId();
 
   // Submitting manually (instead of <form action>) skips React's automatic form
   // reset, so a failed save keeps everything the user typed in the fields
@@ -131,6 +140,19 @@ export function ContactForm({
         </FormField>
       </div>
 
+      <FormField field={groupInputId} label="Группа" error={state.errors?.groupId}>
+        <NativeSelect
+          id={groupInputId}
+          name="groupId"
+          defaultValue={initialGroupId ?? ""}
+          aria-invalid={state.errors?.groupId ? true : undefined}
+          aria-describedby={state.errors?.groupId ? `${groupInputId}-error` : undefined}
+        >
+          <option value="">Без группы</option>
+          <GroupOptions groups={groups} />
+        </NativeSelect>
+      </FormField>
+
       <div className="flex flex-wrap items-center gap-1 pt-1">
         <Button type="submit" size="lg" disabled={pending} className="max-sm:w-full">
           {pending ? "Сохраняем…" : submitLabel}
@@ -157,7 +179,7 @@ function FormField({
   error,
   children,
 }: {
-  field: ContactField;
+  field: string;
   label: string;
   required?: boolean;
   error?: string[];

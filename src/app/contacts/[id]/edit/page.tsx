@@ -7,6 +7,7 @@ import { BackLink } from "@/components/back-link";
 import { ContactForm } from "@/components/contact-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getContact, parseContactId } from "@/lib/contacts";
+import { listGroups } from "@/lib/groups";
 
 export const metadata: Metadata = {
   title: "Изменить контакт",
@@ -26,7 +27,7 @@ async function EditContact({ params }: Pick<PageProps<"/contacts/[id]/edit">, "p
   const id = parseContactId((await params).id);
   if (!id) notFound();
 
-  const contact = await getContact(id);
+  const [contact, groups] = await Promise.all([getContact(id), listGroups()]);
   if (!contact) notFound();
 
   return (
@@ -41,6 +42,8 @@ async function EditContact({ params }: Pick<PageProps<"/contacts/[id]/edit">, "p
         <CardContent>
           <ContactForm
             action={updateContact.bind(null, contact.id)}
+            groups={groups}
+            initialGroupId={contact.groupId}
             initialValues={{
               name: contact.name,
               about: contact.about ?? "",

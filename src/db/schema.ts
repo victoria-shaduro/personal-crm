@@ -6,7 +6,18 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
+
+export const groups = pgTable(
+  "groups",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    name: text("name").notNull(),
+    nameKey: text("name_key").notNull(),
+  },
+  (table) => [unique("groups_name_key_unique").on(table.nameKey)],
+);
 
 export const contacts = pgTable(
   "contacts",
@@ -18,6 +29,7 @@ export const contacts = pgTable(
     howWeMet: text("how_we_met"),
     phone: text("phone"),
     email: text("email"),
+    groupId: integer("group_id").references(() => groups.id),
     keepInTouchIntervalDays: integer("keep_in_touch_interval_days"),
     nextContactAt: timestamp("next_contact_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -29,6 +41,7 @@ export const contacts = pgTable(
   },
   (table) => [
     index("contacts_name_idx").on(table.name),
+    index("contacts_group_id_idx").on(table.groupId),
     index("contacts_next_contact_at_id_idx").on(table.nextContactAt, table.id),
     check("contacts_keep_in_touch_check", sql`
       (${table.keepInTouchIntervalDays} IS NULL AND ${table.nextContactAt} IS NULL)
