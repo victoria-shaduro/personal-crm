@@ -1,0 +1,47 @@
+name: Pull request CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Check pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: crm_ci
+          POSTGRES_DB: crm_ci
+          POSTGRES_HOST_AUTH_METHOD: trust
+        options: >-
+          --health-cmd "pg_isready -U crm_ci -d crm_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432/tcp
+    steps:
+      - name: Check out the proposed merge
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Run checks and browser tests
+        run: bash deploy/check-pr.sh
+        env:
+          PR_CHECK_POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
