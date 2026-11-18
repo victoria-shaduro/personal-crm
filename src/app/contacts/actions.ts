@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import postgres from "postgres";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -25,6 +26,17 @@ const SAVE_FAILED_MESSAGE =
 
 const contactIdSchema = z.number().int().positive();
 
+function isUnknownGroup(error: unknown) {
+  const cause = error instanceof Error ? error.cause : undefined;
+  return cause instanceof postgres.PostgresError
+    && cause.code === "23503"
+    && cause.constraint_name === "contacts_group_id_groups_id_fk";
+}
+
+const UNKNOWN_GROUP_STATE = {
+  errors: { groupId: ["Группа не найдена. Выберите другую группу."] },
+} satisfies ContactFormState;
+
 export async function createContact(
   _previousState: ContactFormState,
   formData: FormData,
@@ -42,6 +54,7 @@ export async function createContact(
       .returning({ id: contacts.id });
     createdId = created.id;
   } catch (error) {
+    if (isUnknownGroup(error)) return UNKNOWN_GROUP_STATE;
     logDbError("Failed to create contact", error);
     return { message: SAVE_FAILED_MESSAGE };
   }
@@ -74,6 +87,7 @@ export async function updateContact(
       return { message: "Контакт не найден." };
     }
   } catch (error) {
+    if (isUnknownGroup(error)) return UNKNOWN_GROUP_STATE;
     logDbError("Failed to update contact", error, { contactId });
     return { message: SAVE_FAILED_MESSAGE };
   }

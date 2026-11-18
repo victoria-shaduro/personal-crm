@@ -102,6 +102,7 @@ pnpm exec tsx scripts/seed-keep-in-touch.ts
 | `pnpm db:seed` | заполняет пустую базу тестовыми контактами |
 | `pnpm build` | собирает приложение и проверяет код на ошибки |
 | `pnpm lint`, `pnpm typecheck` | проверки кода |
+| `pnpm test` | запускает локальные тесты. Для тестов групп с PostgreSQL задайте `GROUPS_TEST_DATABASE_URL` со строкой подключения к отдельному локальному серверу тестовой базы |
 
 ## Работа над фичами через OpenSpec
 

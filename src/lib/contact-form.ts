@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { parseGroupId } from "@/lib/group-form";
+
 // Shared between the server actions and the client form components
 
 export const CONTACT_FIELDS = ["name", "about", "howWeMet", "phone", "email"] as const;
@@ -7,7 +9,7 @@ export type ContactField = (typeof CONTACT_FIELDS)[number];
 export type ContactFormValues = Record<ContactField, string>;
 
 export type ContactFormState = {
-  errors?: Partial<Record<ContactField, string[]>>;
+  errors?: Partial<Record<ContactField | "groupId", string[]>>;
   message?: string;
 };
 
@@ -21,6 +23,8 @@ const emptyToNull = (value: string) => (value === "" ? null : value);
 
 const optionalText = (maxLength: number, tooLongMessage: string) =>
   z.string().trim().max(maxLength, tooLongMessage).transform(emptyToNull);
+
+const GROUP_SELECTION_ERROR = "Выберите группу из списка.";
 
 export const contactSchema = z.object({
   name: z
@@ -48,6 +52,10 @@ export const contactSchema = z.object({
       "Похоже, в адресе почты ошибка",
     )
     .transform(emptyToNull),
+  groupId: z.string({ error: GROUP_SELECTION_ERROR })
+    .refine((value) => value === "" || parseGroupId(value) !== null, GROUP_SELECTION_ERROR)
+    .transform(parseGroupId)
+    .optional(),
 });
 
 export const noteSchema = z
@@ -56,7 +64,7 @@ export const noteSchema = z
   .min(1, "Заметка пустая — напишите хотя бы пару слов")
   .max(10_000, "Заметка слишком длинная — не больше 10 000 символов");
 
-export function readContactForm(formData: FormData): ContactFormValues {
+export function readContactForm(formData: FormData) {
   const read = (field: ContactField) => {
     const value = formData.get(field);
     return typeof value === "string" ? value : "";
@@ -67,6 +75,7 @@ export function readContactForm(formData: FormData): ContactFormValues {
     howWeMet: read("howWeMet"),
     phone: read("phone"),
     email: read("email"),
+    groupId: formData.get("groupId") ?? undefined,
   };
 }
 

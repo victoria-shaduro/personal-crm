@@ -125,6 +125,9 @@ async function ContactDetails({
             <Detail label="Откуда знакомы" className="sm:col-span-2">
               {contact.howWeMet}
             </Detail>
+            <Detail label="Группа">
+              <span className="wrap-anywhere">{contact.groupName ?? "Без группы"}</span>
+            </Detail>
             <Detail label="В контактах с">{formatDate(contact.createdAt)}</Detail>
             {contact.keepInTouchIntervalDays !== null && contact.nextContactAt ? (
               <Detail label="Связаться">

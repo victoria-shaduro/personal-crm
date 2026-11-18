@@ -1,10 +1,11 @@
 import "server-only";
 
-import { asc, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gte, isNull, lt, sql } from "drizzle-orm";
 import { cache } from "react";
 
 import { db } from "@/db";
-import { contacts, notes } from "@/db/schema";
+import { contacts, groups, notes } from "@/db/schema";
+import type { ContactGroupFilter } from "@/lib/contact-list-filters";
 
 // "Ё" and "е" are used interchangeably in Russian names, so search treats them as equal
 function normalizeForSearch(text: string): string {
@@ -15,8 +16,11 @@ function escapeLikePattern(text: string): string {
   return text.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
-export async function listContacts(query: string) {
+export async function listContacts(query: string, group: ContactGroupFilter = null) {
   const pattern = `%${escapeLikePattern(normalizeForSearch(query))}%`;
+  const groupCondition = group === "ungrouped"
+    ? isNull(contacts.groupId)
+    : group === null ? undefined : eq(contacts.groupId, group);
 
   return db
     .select({
@@ -27,11 +31,10 @@ export async function listContacts(query: string) {
       email: contacts.email,
     })
     .from(contacts)
-    .where(
-      query
-        ? sql`translate(${contacts.name}, 'Ёё', 'Ее') ilike ${pattern}`
-        : undefined,
-    )
+    .where(and(
+      query ? sql`translate(${contacts.name}, 'Ёё', 'Ее') ilike ${pattern}` : undefined,
+      groupCondition,
+    ))
     .orderBy(asc(contacts.name), asc(contacts.id));
 }
 
@@ -57,8 +60,9 @@ export type KeepInTouchListItem = Awaited<ReturnType<typeof listKeepInTouchConta
 // Cached per request so metadata and the page share one query
 export const getContact = cache(async (id: number) => {
   const [contact] = await db
-    .select()
+    .select({ ...getTableColumns(contacts), groupName: groups.name })
     .from(contacts)
+    .leftJoin(groups, eq(contacts.groupId, groups.id))
     .where(eq(contacts.id, id))
     .limit(1);
   return contact ?? null;
