@@ -12,6 +12,9 @@
 next-env.d.ts
 *.tsbuildinfo
 
+# Playwright
+/test-results/
+
 # misc
 .DS_Store
 *.pem
