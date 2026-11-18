@@ -2,6 +2,7 @@
 .github
 .next
 node_modules
+test-results
 .env
 .env.*
 *.pem
