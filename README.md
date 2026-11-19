@@ -102,7 +102,8 @@ pnpm exec tsx scripts/seed-keep-in-touch.ts
 | `pnpm db:seed` | заполняет пустую базу тестовыми контактами |
 | `pnpm build` | собирает приложение и проверяет код на ошибки |
 | `pnpm lint`, `pnpm typecheck` | проверки кода |
-| `pnpm test` | запускает локальные тесты. Для тестов групп с PostgreSQL задайте `GROUPS_TEST_DATABASE_URL` со строкой подключения к отдельному локальному серверу тестовой базы |
+| `pnpm test` | запускает локальные тесты. Для проверок с PostgreSQL задайте `GROUPS_TEST_DATABASE_URL` со строкой подключения к отдельному локальному серверу тестовой базы |
+| `pnpm exec playwright test` | проверяет сценарии в браузере. Запустите приложение с новой тестовой базой PostgreSQL в Docker, примените миграции и укажите ту же базу в `GROUPS_TEST_DATABASE_URL` |
 
 ## Работа над фичами через OpenSpec
 
