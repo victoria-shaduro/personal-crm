@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 umask 077
 DEPLOY_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+RESTORE_STATE="$DEPLOY_DIR/.restore-in-progress"
+DEFAULT_PUBLIC_HEALTH_URL=https://app.xn----7sbgnddegvj7a8c6i.xn--p1ai/health
 cd "$DEPLOY_DIR"
 
 require_env() {
@@ -16,13 +18,24 @@ lock_deployment() {
   flock -w 600 9
 }
 
+require_no_pending_restore() {
+  [[ ! -f $RESTORE_STATE ]] || {
+    echo 'A database restore is unfinished. Run deploy/restore.sh to complete it first.' >&2
+    exit 1
+  }
+}
+
 compose() {
   docker compose -p prod --project-directory "$DEPLOY_DIR" \
     --env-file "$DEPLOY_DIR/.env" -f "$DEPLOY_DIR/deploy/compose.yaml" "$@"
 }
 
+is_release_image() {
+  [[ $1 =~ ^ghcr\.io/victoria-shaduro/personal-crm:[a-f0-9]{40}$ ]]
+}
+
 validate_image() {
-  [[ $IMAGE =~ ^ghcr\.io/victoria-shaduro/personal-crm:[a-f0-9]{40}$ ]] || {
+  is_release_image "$IMAGE" || {
     echo 'A full commit SHA image tag is required.' >&2; exit 1;
   }
   export IMAGE

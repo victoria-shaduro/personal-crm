@@ -3,6 +3,7 @@ set -Eeuo pipefail
 source "$(dirname -- "$0")/common.sh"
 require_env
 lock_deployment
+require_no_pending_restore
 [[ ! -f .seed-complete ]] || { echo 'Seed already completed; skipping.'; exit 0; }
 IMAGE=$(cat .current-image)
 validate_image
