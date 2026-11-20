@@ -3,7 +3,8 @@ set -Eeuo pipefail
 source "$(dirname -- "$0")/common.sh"
 require_env
 lock_deployment
-PUBLIC_HEALTH_URL=${PUBLIC_HEALTH_URL:-https://app.xn----7sbgnddegvj7a8c6i.xn--p1ai/health}
+require_no_pending_restore
+PUBLIC_HEALTH_URL=${PUBLIC_HEALTH_URL:-$DEFAULT_PUBLIC_HEALTH_URL}
 IMAGE=$(cat .current-image)
 export IMAGE
 running=$(compose ps -q app)

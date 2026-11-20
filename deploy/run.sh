@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 source "$(dirname -- "$0")/common.sh"
+source deploy/backup.sh
 IMAGE=${1:?Image is required}
 PUBLIC_HEALTH_URL=${2:?Public health URL is required}
 validate_image
@@ -8,6 +9,8 @@ require_env
 lock_deployment
 trap 'echo "Deployment failed; no automatic rollback was performed." >&2' ERR
 
+require_no_pending_restore
+backup_before_deploy
 compose config --quiet
 compose pull app db
 compose up -d --wait --wait-timeout 120 db
@@ -18,4 +21,5 @@ bash deploy/smoke.sh "${IMAGE##*:}" "$PUBLIC_HEALTH_URL"
 record_release
 bash deploy/cleanup.sh
 compose ps
+prune_backups
 echo "Deployment succeeded: $IMAGE"
