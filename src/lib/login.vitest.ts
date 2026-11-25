@@ -13,7 +13,7 @@ test("delivers the specified message and keeps the token in the URL fragment", a
   expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
     to: "test@example.org",
     subject: "Вход в Личную CRM",
-    from: { name: "Личная CRM", address: "noreply@mail.crm.завяжи-узелок.рф" },
+    from: { name: "Личная CRM", address: "noreply@завяжи-узелок.рф" },
     html: expect.stringContaining('href="https://example.org/login/verify#abc">Войти'),
     text: expect.stringContaining("Если вы не запрашивали вход - просто проигнорируйте письмо"),
   }));

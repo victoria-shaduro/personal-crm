@@ -24,7 +24,7 @@ export async function sendLoginMail(email: string, token: string, origin: string
   const duration = "Ссылка работает 15 минут.";
   const footer = "Если вы не запрашивали вход - просто проигнорируйте письмо";
   await send({
-    from: { name: "Личная CRM", address: "noreply@mail.crm.завяжи-узелок.рф" },
+    from: { name: "Личная CRM", address: "noreply@завяжи-узелок.рф" },
     to: email, subject: "Вход в Личную CRM",
     text: `Войти: ${link}\n${duration}\n${footer}`,
     html: `<p><a href="${link}">Войти</a></p><p>${duration}</p><p>${footer}</p>`,
