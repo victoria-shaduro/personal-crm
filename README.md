@@ -155,7 +155,7 @@ openspec validate --all --strict --no-interactive
 
 Приложение: https://app.завяжи-узелок.рф. Сервер: `78.24.223.28`, пользователь `crmapp`, папка `/home/crmapp/personal-crm`.
 
-Перед первой выкаткой входа подтвердите домен отправителя в Unisender Go через DNS и активируйте домен ссылок для аккаунта. На сервере задайте `OWNER_EMAIL`, отдельный `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` с публичным HTTPS-адресом приложения, `SMTP_PORT=587`, `SMTP_USER` с идентификатором пользователя Unisender Go и `SMTP_PASSWORD` с API-ключом этого пользователя в серверном `.env` с правами 600. Для кабинета go1 укажите `SMTP_HOST=smtp.go1.unisender.ru`, для go2 — `SMTP_HOST=smtp.go2.unisender.ru`. Письма приходят от «Личная CRM» с адреса `noreply@mail.crm.завяжи-узелок.рф`. Контейнер получает параметры при запуске.
+Перед первой выкаткой входа подтвердите домен отправителя в Unisender Go через DNS и активируйте домен ссылок для аккаунта. На сервере задайте `OWNER_EMAIL`, отдельный `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` с публичным HTTPS-адресом приложения, `SMTP_PORT=587`, `SMTP_USER` с идентификатором пользователя Unisender Go и `SMTP_PASSWORD` с API-ключом этого пользователя в серверном `.env` с правами 600. Для кабинета go1 укажите `SMTP_HOST=smtp.go1.unisender.ru`, для go2 — `SMTP_HOST=smtp.go2.unisender.ru`. Письма приходят от «Личная CRM» с адреса `noreply@завяжи-узелок.рф`. Контейнер получает параметры при запуске.
 
 После каждого push в `main` GitHub Actions автоматически:
 
