@@ -139,7 +139,7 @@ function EmptyState({ query, groupName, ungrouped }: {
             Пока нет ни одного контакта
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Добавьте первого человека — нажмите «Добавить контакт».
+            Добавь первый контакт
           </p>
         </>
       )}

@@ -1,3 +1,4 @@
+import { seedOwner } from "./seed-owner";
 // Adds separate, labelled local fixtures without changing existing contacts.
 import { loadEnvConfig } from "@next/env";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -17,6 +18,7 @@ async function main() {
   const client = postgres(databaseUrl, { max: 1, connect_timeout: 5 });
   try {
     const db = drizzle(client);
+    const ownerId = await seedOwner(db);
     const now = Date.now();
     const fixtures = [
       { name: "Ольга Лебедева", interval: 365, offset: -30 },
@@ -28,6 +30,7 @@ async function main() {
       { name: "Алексей Петров", interval: null, offset: null },
     ];
     const added = await db.insert(contacts).values(fixtures.map((fixture) => ({
+      ownerId,
       name: fixture.name,
       about: "Локальный тестовый контакт для проверки расписания",
       keepInTouchIntervalDays: fixture.interval,

@@ -13,6 +13,7 @@ WORKDIR /app
 ARG APP_REVISION
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 ENV APP_REVISION=$APP_REVISION
+LABEL io.personal-crm.login-schema="1"
 LABEL org.opencontainers.image.source="https://github.com/victoria-shaduro/personal-crm"
 LABEL org.opencontainers.image.revision=$APP_REVISION
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home app

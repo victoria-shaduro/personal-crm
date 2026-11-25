@@ -18,6 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     services:
+      mailpit:
+        image: axllent/mailpit:v1.34.0
+        ports:
+          - 1025/tcp
+          - 8025/tcp
       postgres:
         image: postgres:18
         env:
@@ -44,4 +49,6 @@ jobs:
       - name: Run checks and browser tests
         run: bash deploy/check-pr.sh
         env:
+          SMTP_PORT: ${{ job.services.mailpit.ports[1025] }}
+          MAILPIT_URL: http://127.0.0.1:${{ job.services.mailpit.ports[8025] }}
           PR_CHECK_POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}

@@ -1,11 +1,12 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
 import { z } from "zod";
 
+import { ownerId } from "@/lib/current-user";
 import { db } from "@/db";
 import { contacts, notes } from "@/db/schema";
 import {
@@ -30,7 +31,7 @@ function isUnknownGroup(error: unknown) {
   const cause = error instanceof Error ? error.cause : undefined;
   return cause instanceof postgres.PostgresError
     && cause.code === "23503"
-    && cause.constraint_name === "contacts_group_id_groups_id_fk";
+    && cause.constraint_name === "contacts_owner_group_fk";
 }
 
 const UNKNOWN_GROUP_STATE = {
@@ -41,6 +42,7 @@ export async function createContact(
   _previousState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
+  const owner = await ownerId();
   const parsed = contactSchema.safeParse(readContactForm(formData));
   if (!parsed.success) {
     return { errors: z.flattenError(parsed.error).fieldErrors };
@@ -50,7 +52,7 @@ export async function createContact(
   try {
     const [created] = await db
       .insert(contacts)
-      .values(parsed.data)
+      .values({ ...parsed.data, ownerId: owner })
       .returning({ id: contacts.id });
     createdId = created.id;
   } catch (error) {
@@ -68,6 +70,7 @@ export async function updateContact(
   _previousState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
+  const owner = await ownerId();
   if (!contactIdSchema.safeParse(contactId).success) {
     return { message: "Контакт не найден." };
   }
@@ -81,7 +84,7 @@ export async function updateContact(
     const [updated] = await db
       .update(contacts)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(contacts.id, contactId))
+      .where(and(eq(contacts.id, contactId), eq(contacts.ownerId, owner)))
       .returning({ id: contacts.id });
     if (!updated) {
       return { message: "Контакт не найден." };
@@ -101,6 +104,7 @@ export async function addNote(
   _previousState: NoteFormState,
   formData: FormData,
 ): Promise<NoteFormState> {
+  const owner = await ownerId();
   const rawBody = formData.get("body");
   const body = typeof rawBody === "string" ? rawBody : "";
   if (!contactIdSchema.safeParse(contactId).success) {
@@ -113,7 +117,7 @@ export async function addNote(
   }
 
   try {
-    const added = await recordCommunicationNote(contactId, parsed.data);
+    const added = await recordCommunicationNote(owner, contactId, parsed.data);
     if (!added) {
       return { body, error: "Контакт не найден." };
     }
@@ -127,10 +131,10 @@ export async function addNote(
   return { savedAt: Date.now() };
 }
 
-async function recordCommunicationNote(contactId: number, body: string) {
+async function recordCommunicationNote(owner: string, contactId: number, body: string) {
   return db.transaction(async (tx) => {
     const [contact] = await tx.select().from(contacts)
-      .where(eq(contacts.id, contactId)).for("update");
+      .where(and(eq(contacts.id, contactId), eq(contacts.ownerId, owner))).for("update");
     if (!contact) return false;
     const now = new Date();
     await tx.insert(notes).values({ contactId, body, createdAt: now });
@@ -138,7 +142,7 @@ async function recordCommunicationNote(contactId: number, body: string) {
       updatedAt: now,
       nextContactAt: contact.keepInTouchIntervalDays === null
         ? null : nextContactDate(now, contact.keepInTouchIntervalDays),
-    }).where(eq(contacts.id, contactId));
+    }).where(and(eq(contacts.id, contactId), eq(contacts.ownerId, owner)));
     return true;
   });
 }
@@ -148,6 +152,7 @@ export async function updateKeepInTouch(
   _previousState: KeepInTouchFormState,
   formData: FormData,
 ): Promise<KeepInTouchFormState> {
+  const owner = await ownerId();
   if (!contactIdSchema.safeParse(contactId).success) return { error: "Контакт не найден." };
   const value = formData.get("intervalDays");
   if (typeof value !== "string" || !["", "7", "30", "90", "365"].includes(value)) {
@@ -158,14 +163,14 @@ export async function updateKeepInTouch(
   try {
     const updated = await db.transaction(async (tx) => {
       const [contact] = await tx.select({ id: contacts.id }).from(contacts)
-        .where(eq(contacts.id, contactId)).for("update");
+        .where(and(eq(contacts.id, contactId), eq(contacts.ownerId, owner))).for("update");
       if (!contact) return false;
       const now = new Date();
       await tx.update(contacts).set({
         keepInTouchIntervalDays: interval,
         nextContactAt: interval === null ? null : nextContactDate(now, interval),
         updatedAt: now,
-      }).where(eq(contacts.id, contactId));
+      }).where(and(eq(contacts.id, contactId), eq(contacts.ownerId, owner)));
       return true;
     });
     if (!updated) return { error: "Контакт не найден." };
@@ -183,10 +188,11 @@ export async function markContacted(
   _previousState: MarkContactedState,
   _formData: FormData,
 ): Promise<MarkContactedState> {
+  const owner = await ownerId();
   void _formData;
   if (!contactIdSchema.safeParse(contactId).success) return { error: "Контакт не найден." };
   try {
-    if (!await recordCommunicationNote(contactId, "Связались")) return { error: "Контакт не найден." };
+    if (!await recordCommunicationNote(owner, contactId, "Связались")) return { error: "Контакт не найден." };
   } catch (error) {
     logDbError("Failed to mark contact as contacted", error, { contactId });
     return { error: SAVE_FAILED_MESSAGE };
@@ -201,6 +207,7 @@ export async function deleteContact(
   _previousState: DeleteContactState,
   _formData: FormData,
 ): Promise<DeleteContactState> {
+  const owner = await ownerId();
   void _previousState;
   void _formData;
   if (!contactIdSchema.safeParse(contactId).success) {
@@ -208,7 +215,7 @@ export async function deleteContact(
   }
   try {
     const [deleted] = await db.delete(contacts)
-      .where(eq(contacts.id, contactId)).returning({ id: contacts.id });
+      .where(and(eq(contacts.id, contactId), eq(contacts.ownerId, owner))).returning({ id: contacts.id });
     if (!deleted) return { message: "Контакт не найден." };
   } catch (error) {
     logDbError("Failed to delete contact", error, { contactId });

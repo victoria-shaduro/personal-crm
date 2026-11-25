@@ -15,6 +15,7 @@ const db = vi.hoisted(() => ({
 }));
 const { revalidatePath } = vi.hoisted(() => ({ revalidatePath: vi.fn() }));
 
+vi.mock("@/lib/current-user", () => ({ ownerId: async () => "test-owner" }));
 vi.mock("@/db", () => ({ db }));
 vi.mock("@/lib/log-db-error", () => ({ logDbError: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath }));

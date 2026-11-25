@@ -3,6 +3,7 @@ import "server-only";
 import { and, asc, desc, eq, getTableColumns, gte, isNull, lt, sql } from "drizzle-orm";
 import { cache } from "react";
 
+import { ownerId } from "./current-user";
 import { db } from "@/db";
 import { contacts, groups, notes } from "@/db/schema";
 import type { ContactGroupFilter } from "@/lib/contact-list-filters";
@@ -33,6 +34,7 @@ export async function listContacts(query: string, group: ContactGroupFilter = nu
     .from(contacts)
     .where(and(
       query ? sql`translate(${contacts.name}, 'Ёё', 'Ее') ilike ${pattern}` : undefined,
+      eq(contacts.ownerId, await ownerId()),
       groupCondition,
     ))
     .orderBy(asc(contacts.name), asc(contacts.id));
@@ -41,12 +43,13 @@ export async function listContacts(query: string, group: ContactGroupFilter = nu
 export type ContactListItem = Awaited<ReturnType<typeof listContacts>>[number];
 
 export async function listKeepInTouchContacts(now = new Date()) {
+  const owned = eq(contacts.ownerId, await ownerId());
   const fields = { id: contacts.id, name: contacts.name, nextContactAt: contacts.nextContactAt };
   // Both parts share a snapshot as well as a clock, even during concurrent writes.
   const [overdue, upcoming] = await db.transaction(async (tx) => Promise.all([
-    tx.select(fields).from(contacts).where(lt(contacts.nextContactAt, now))
+    tx.select(fields).from(contacts).where(and(owned, lt(contacts.nextContactAt, now)))
       .orderBy(asc(contacts.nextContactAt), asc(contacts.id)),
-    tx.select(fields).from(contacts).where(gte(contacts.nextContactAt, now))
+    tx.select(fields).from(contacts).where(and(owned, gte(contacts.nextContactAt, now)))
       .orderBy(asc(contacts.nextContactAt), asc(contacts.id)).limit(2),
   ]), { isolationLevel: "repeatable read", accessMode: "read only" });
   return [
@@ -63,16 +66,17 @@ export const getContact = cache(async (id: number) => {
     .select({ ...getTableColumns(contacts), groupName: groups.name })
     .from(contacts)
     .leftJoin(groups, eq(contacts.groupId, groups.id))
-    .where(eq(contacts.id, id))
+    .where(and(eq(contacts.id, id), eq(contacts.ownerId, await ownerId())))
     .limit(1);
   return contact ?? null;
 });
 
 export async function getContactNotes(contactId: number) {
   return db
-    .select()
+    .select(getTableColumns(notes))
     .from(notes)
-    .where(eq(notes.contactId, contactId))
+    .innerJoin(contacts, eq(notes.contactId, contacts.id))
+    .where(and(eq(notes.contactId, contactId), eq(contacts.ownerId, await ownerId())))
     .orderBy(desc(notes.createdAt), desc(notes.id));
 }
 

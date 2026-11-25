@@ -16,6 +16,8 @@ let admin: postgres.Sql | undefined;
 let client: postgres.Sql;
 let database: ReturnType<typeof drizzle<typeof schema>>;
 
+let testOwner: string;
+vi.mock("@/lib/current-user", () => ({ ownerId: async () => testOwner }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/db", () => ({ get db() { return database; } }));
 vi.mock("@/lib/log-db-error", () => ({ logDbError: vi.fn() }));
@@ -30,7 +32,7 @@ function moment(days: number) {
 
 async function addContact(name: string, deadline: Date | null = null, interval = 7) {
   const [contact] = await database.insert(schema.contacts).values({
-    name,
+    ownerId: testOwner, name,
     ...(deadline ? { keepInTouchIntervalDays: interval, nextContactAt: deadline } : {}),
   }).returning({ id: schema.contacts.id });
   return contact.id;
@@ -62,9 +64,10 @@ describe.runIf(Boolean(testDatabaseUrl))("keep in touch with PostgreSQL", () => 
     admin = postgres(url.toString());
     await admin`create database ${admin(databaseName)}`;
     url.pathname = `/${databaseName}`;
-    client = postgres(url.toString());
+    client = postgres(url.toString(), { connection: { "crm.owner_email": "owner@example.org" } });
     database = drizzle(client, { schema });
     await migrate(database, { migrationsFolder: "drizzle" });
+    testOwner = (await database.select().from(schema.user))[0].id;
   });
 
   beforeEach(async () => {

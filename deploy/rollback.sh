@@ -17,6 +17,12 @@ IMAGE=${1:-$IMAGE}
 validate_image
 # Roll back the application only. Database migrations are never reversed here.
 docker image inspect "$IMAGE" >/dev/null
+target_schema=$(image_has_login "$IMAGE")
+database_schema=$(database_has_login)
+if [[ $target_schema != "$database_schema" ]]; then
+  echo 'This image requires a matching database backup. Use restore.sh --with-image <backup-file>.' >&2
+  exit 1
+fi
 compose up -d --no-deps --pull never --wait --wait-timeout 120 app
 bash deploy/smoke.sh "${IMAGE##*:}" "$PUBLIC_HEALTH_URL"
 record_release

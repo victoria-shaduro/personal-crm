@@ -1,3 +1,4 @@
+import { login } from "./login-helper";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
@@ -5,6 +6,7 @@ test("creates a grouped contact, finds it and saves a note across browser sessio
   page,
   browser,
 }) => {
+  const email = await login(page);
   const suffix = randomUUID().slice(0, 8);
   const group = `Test group ${suffix}`;
   const name = `Test contact ${suffix}`;
@@ -52,6 +54,7 @@ test("creates a grouped contact, finds it and saves a note across browser sessio
 
   const otherPage = await browser.newPage();
   try {
+    await login(otherPage, email);
     await otherPage.goto("/");
     const otherList = otherPage.getByRole("region", { name: "Список контактов" });
     await otherList.getByRole("link", { name, exact: true }).click();
