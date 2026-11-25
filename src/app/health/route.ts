@@ -10,7 +10,8 @@ export async function GET() {
   try {
     // Check both the connection and the tables created by our migrations.
     await db.execute(sql`
-      select (select 1 from contacts limit 1), (select 1 from notes limit 1)
+      select (select owner_id from contacts limit 1), (select 1 from notes limit 1),
+             (select owner_id from groups limit 1), (select 1 from auth_session limit 1)
     `);
     return Response.json(
       { status: "ok", revision: process.env.APP_REVISION ?? "development" },

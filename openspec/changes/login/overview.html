@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход по почте · Узелок</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=JetBrains+Mono:wght@500&family=Manrope:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #0a0a0b;
+      --foreground: #f2efea;
+      --card: #141416;
+      --primary: #e8783a;
+      --primary-foreground: #111111;
+      --muted-foreground: #bdb8af;
+      --surface-raised: #1a1a1d;
+      --surface-inset: #0e0e10;
+      --border: #232326;
+      --border-strong: #2a2a2e;
+      --thread-peach: #ee9a63;
+      --thread-lavender: #9c82e6;
+      --thread-olive: #c9c46a;
+      --destructive: oklch(0.704 0.191 22.216);
+      --font-manrope: "Manrope";
+      --font-cormorant: "Cormorant Garamond";
+      --font-jetbrains-mono: "JetBrains Mono";
+      --font-sans: var(--font-manrope), system-ui, sans-serif;
+      --font-display: var(--font-cormorant), serif;
+      --font-mono: var(--font-jetbrains-mono), monospace;
+      --text-display: 2.5rem;
+      --text-display--line-height: 1;
+      --text-title: 1.75rem;
+      --text-title--line-height: 1.1;
+      --leading-body: 1.55;
+      --radius-xs: 2px;
+      --radius-sm: 4px;
+      --shadow-card: 0 40px 80px -30px rgb(156 130 230 / 0.35);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--background); color: var(--foreground); font: 1rem / var(--leading-body) var(--font-sans); }
+    .page { max-width: 58rem; margin: auto; padding: 2rem clamp(1rem, 5vw, 2rem) 4rem; }
+    h1, h2, h3 { font-family: var(--font-display); font-weight: 600; }
+    h1 { font-size: clamp(var(--text-display), 7vw, 3.75rem); line-height: var(--text-display--line-height); margin: .5rem 0 1rem; }
+    h2 { font-size: var(--text-display); line-height: var(--text-display--line-height); margin: 0 0 1rem; }
+    h3 { font-size: var(--text-title); line-height: var(--text-title--line-height); margin: 0 0 .5rem; }
+    p { margin: .5rem 0; }
+    a { color: var(--thread-peach); text-underline-offset: .2em; }
+    :focus-visible { outline: 2px solid var(--thread-lavender); outline-offset: .2rem; }
+    header, section { margin-bottom: 3rem; }
+    .brand { color: var(--thread-peach); font: 600 var(--text-title) / 1 var(--font-display); }
+    .lead { max-width: 40rem; font-size: 1.125rem; }
+    .muted, .meta { color: var(--muted-foreground); }
+    .meta { font-size: .875rem; }
+    nav, .legend, .appbar, .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .625rem 1rem; }
+    nav { margin: 1.25rem 0 0; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .card, .rule, .check, .table-card { background: var(--card); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
+    .card, .rule { padding: 1rem 1.25rem; }
+    .feature { grid-column: 1 / -1; box-shadow: var(--shadow-card); }
+    .mock { margin-top: .75rem; padding: .75rem; background: var(--surface-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .new { border: 1px dashed var(--thread-peach); border-radius: var(--radius-sm); padding: .625rem; }
+    .legend .new { padding: .125rem .375rem; }
+    .field, .button { display: inline-block; border: 1px solid var(--border-strong); border-radius: var(--radius-xs); padding: .375rem .625rem; }
+    .field { background: var(--surface-raised); overflow-wrap: anywhere; }
+    .button { background: var(--surface-raised); font-size: .875rem; font-weight: 600; }
+    .primary { background: var(--primary); color: var(--primary-foreground); }
+    .appbar { justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: .625rem; }
+    .copy { font-family: var(--font-mono); font-size: .8125rem; overflow-wrap: anywhere; }
+    .error { color: var(--destructive); }
+    .success { color: var(--thread-olive); }
+    .rules, .model, .checks { display: grid; gap: .625rem; }
+    .rule strong { color: var(--thread-peach); }
+    .rule p:last-child, .card p:last-child { margin-bottom: 0; }
+    .legend { margin: 0 0 1rem; }
+    .model { margin-top: .75rem; }
+    .table-card { padding: .625rem .75rem; }
+    .table-card.new { border-style: dashed; border-color: var(--thread-peach); }
+    .connection { margin: -.375rem 0; padding-left: .875rem; border-left: 1px solid var(--thread-lavender); color: var(--muted-foreground); font-size: .875rem; }
+    .model .new-field { color: var(--thread-peach); }
+    .model-cards { margin-top: 1rem; }
+    .checks { margin-top: 1rem; }
+    .check { display: flex; align-items: flex-start; gap: .75rem; padding: .75rem 1rem; cursor: pointer; }
+    .check input { width: 1rem; height: 1rem; margin: .25rem 0 0; flex: none; accent-color: var(--primary); }
+    .check strong, .check .hint { display: block; }
+    .check .hint { color: var(--muted-foreground); font-size: .9375rem; }
+    .check.key { border-color: var(--thread-lavender); }
+    details { margin-top: 1rem; }
+    summary { cursor: pointer; font-weight: 600; }
+    ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+    li + li { margin-top: .375rem; }
+    footer { border-top: 1px solid var(--border); padding-top: 1rem; }
+    @media (max-width: 44rem) {
+      .grid { grid-template-columns: 1fr; }
+      .card, .rule { padding: .875rem; }
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <p class="brand">Узелок</p>
+    <h1>Вход по почте</h1>
+    <p class="lead">Друзья смогут вести свои контакты в CRM. Каждый войдёт по письму и увидит свой список. Ваши прежние контакты, группы и заметки будут доступны под вашей почтой.</p>
+    <p class="meta">Фича спроектирована. Выполнено 0 из 13 задач. Тесты входа и изоляции запланированы.</p>
+    <nav aria-label="Разделы обзора">
+      <a href="#screens">Экраны</a><a href="#rules">Правила</a><a href="#data">Данные</a><a href="#checks">Чек-лист</a>
+    </nav>
+  </header>
+
+  <section id="screens">
+    <h2>Что появится на экранах</h2>
+    <p class="meta">Пунктиром отмечены новые элементы или изменившиеся данные. Имена и адреса приведены для примера.</p>
+    <div class="grid">
+      <article class="card">
+        <h3>Страница входа</h3>
+        <div class="mock new">
+          <p>Почта</p>
+          <div class="toolbar"><span class="field">anna@example.com</span><span class="button primary">Получить ссылку</span></div>
+          <p class="meta success">Ссылка для входа отправлена на anna@example.com</p>
+        </div>
+        <p class="meta">При неверном адресе под полем появится <span class="error">«Проверь адрес почты»</span>.</p>
+      </article>
+      <article class="card">
+        <h3>Письмо</h3>
+        <div class="mock new">
+          <p class="meta">От Личной CRM</p>
+          <p><strong>Вход в Личную CRM</strong></p>
+          <p><span class="button primary">Войти</span></p>
+          <p class="meta">Ссылка действует 15 минут. Если вы не запрашивали вход - просто проигнорируйте письмо.</p>
+        </div>
+      </article>
+      <article class="card feature">
+        <h3>Главная после входа</h3>
+        <div class="mock">
+          <div class="appbar"><span class="brand">Узелок</span><span class="toolbar new"><span class="copy">anna@example.com</span><span class="button">Выйти</span></span></div>
+          <p><strong>Контакты</strong></p>
+          <div class="toolbar"><span class="button">Группы</span><span class="button primary">Добавить контакт</span></div>
+          <div class="mock new">
+            <p><strong>Пора связаться</strong> · Марина Коваль</p>
+            <div class="toolbar"><span class="field">Найти контакт по имени</span><span class="field">Все контакты</span></div>
+            <p>Марина Коваль · Теннис</p>
+          </div>
+        </div>
+        <p class="meta">Видны свои контакты и напоминания. Новый пользователь увидит «Добавь первый контакт».</p>
+      </article>
+      <article class="card">
+        <h3>Группы и формы контакта</h3>
+        <div class="mock new"><p>Группы · Друзья, Теннис</p><p>Группа контакта · Теннис</p></div>
+        <p class="meta">На экране «Группы», в форме контакта и в фильтре доступны свои группы.</p>
+      </article>
+      <article class="card">
+        <h3>Чужая карточка или правка</h3>
+        <div class="mock new"><p><strong>Контакт не найден</strong></p><span class="button">К списку контактов</span></div>
+        <p class="meta">Своя карточка открывается с заметками и частотой общения.</p>
+      </article>
+      <article class="card">
+        <h3>Устаревшая ссылка</h3>
+        <div class="mock new"><p><strong>Ссылка устарела, запроси новую</strong></p><span class="button">К странице входа</span></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="rules">
+    <h2>Как это работает</h2>
+    <div class="rules">
+      <article class="rule"><strong>Первый вход создаёт аккаунт</strong><p>Введите почту и откройте ссылку из письма. Подтверждение отправки одинаковое для новой и знакомой почты.</p></article>
+      <article class="rule"><strong>Одна ссылка, один вход, 15 минут</strong><p>Второе успешно отправленное письмо отменяет первую ссылку. Если почта не приняла новое письмо, приложение покажет ошибку. Предыдущая ссылка сохранит свой срок.</p></article>
+      <article class="rule"><strong>До трёх писем за 10 минут</strong><p>Для <span class="copy">Anna@example.com</span> и <span class="copy">anna@example.com</span> действует общий лимит. Пробелы по краям адреса тоже не влияют.</p></article>
+      <article class="rule"><strong>30 дней с последнего захода</strong><p>Срок продлевается отдельно на каждом устройстве. Выход на ноутбуке оставляет вход на телефоне.</p></article>
+      <article class="rule"><strong>Почта зависит от окружения</strong><p>На компьютере и в тестах письма попадают в Mailpit — тестовый ящик в браузере. На сервере Unisender Go отправляет письмо на настоящий адрес.</p></article>
+      <article class="rule"><strong>Доступ только к своим записям</strong><p>Анна и Борис могут оба создать группу «Друзья». Сервер проверяет владельца и при открытии страницы, и при попытке изменить запись.</p></article>
+    </div>
+  </section>
+
+  <section id="data">
+    <h2>Модель данных до и после</h2>
+    <p class="legend meta"><span class="new">Новое</span><span>Сплошная рамка — было в базе</span></p>
+    <div class="grid">
+      <article class="card">
+        <h3>Сейчас</h3>
+        <div class="model">
+          <div class="table-card"><strong>Группы</strong><div class="meta">Название уникально для всей базы</div></div>
+          <div class="connection">↓ У контакта может быть одна группа</div>
+          <div class="table-card"><strong>Контакты</strong><div class="meta">Имя, данные связи, группа, дата напоминания</div></div>
+          <div class="connection">↓ У контакта может быть несколько заметок</div>
+          <div class="table-card"><strong>Заметки</strong><div class="meta">Контакт, текст, дата</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <h3>После</h3>
+        <div class="model">
+          <div class="table-card new"><strong>Аккаунты</strong><div class="meta">Почта владельца</div></div>
+          <div class="connection">↓ Аккаунт владеет группами и контактами</div>
+          <div class="table-card"><strong>Группы</strong><div class="meta new-field">+ Владелец · уникальное название внутри аккаунта</div></div>
+          <div class="connection">↓ У контакта может быть одна группа того же владельца</div>
+          <div class="table-card"><strong>Контакты</strong><div class="meta new-field">+ Владелец</div></div>
+          <div class="connection">↓ Заметки принадлежат владельцу контакта</div>
+          <div class="table-card"><strong>Заметки</strong><div class="meta">Контакт, текст, дата</div></div>
+          <div class="table-card new"><strong>Входы и письма</strong><div class="meta">Входы по устройствам связаны с аккаунтом. Ссылки и история отправок привязаны к почте.</div></div>
+        </div>
+      </article>
+    </div>
+    <div class="rules model-cards">
+      <article class="rule"><strong>Пример поиска</strong><p>Когда Борис ищет «Марина», сервер смотрит среди контактов Бориса. Запись «Марина Коваль» из списка Анны не появится даже по прямой ссылке.</p></article>
+      <article class="rule"><strong>Одно обновление базы</strong><p>Создаёт таблицы входа и добавляет владельца существующим контактам и группам. Номера записей, заметки, группы и даты напоминаний сохраняются. Демо-данные назначаются той же почте.</p></article>
+      <article class="rule"><strong>Как откатиться</strong><p>Владелица подтверждает восстановление копии базы, снятой перед переносом. После восстановления запускается соответствующая старая версия приложения. Более свежие записи остаются в страховочной копии.</p></article>
+    </div>
+  </section>
+
+  <section id="checks">
+    <h2>Как проверить руками</h2>
+    <p class="meta">После реализации откройте два независимых браузера и локальный Mailpit. Для проверки переноса используйте отдельную базу с записями предыдущей версии.</p>
+    <div class="checks">
+      <label class="check"><input type="checkbox"><span><strong>Вход обязателен</strong><span class="hint">Откройте главную, группы, добавление, карточку и правку без входа. Везде должна открыться форма входа.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Неверная почта</strong><span class="hint">Введите адрес без @. Проверьте «Проверь адрес почты» и отсутствие письма. Отдельный тест повторяет запрос напрямую.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Подтверждение и адрес</strong><span class="hint">Запросите письмо для новой почты. После первого входа повторите запрос с другим регистром и пробелами. Текст подтверждения и аккаунт совпадают.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Содержимое письма</strong><span class="hint">Откройте письмо в Mailpit. Проверьте отправителя noreply@mail.crm.завяжи-узелок.рф, тему «Вход в Личную CRM», кнопку, срок и текст для тех, кто не запрашивал вход.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Первый вход</strong><span class="hint">Откройте ссылку из письма. На главной видны ваша почта, кнопка «Выйти» и подсказка «Добавь первый контакт».</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Повтор ссылки</strong><span class="hint">Откройте использованную ссылку. Должны появиться сообщение об устаревшей ссылке и кнопка на страницу входа.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Срок ссылки</strong><span class="hint">Откройте неиспользованную ссылку через 15 минут. Должно появиться то же сообщение.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Замена ссылки</strong><span class="hint">Запросите два письма. Откройте первую ссылку и проверьте сообщение об истечении, затем войдите по второй.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Лимит писем</strong><span class="hint">За 10 минут запросите четыре письма для одной почты, меняя регистр. Писем должно быть три. После окончания окна снова можно получить письмо.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Сбой почты</strong><span class="hint">Получите первое письмо. Остановите локальный Mailpit и запросите новое. Должна появиться ошибка отправки. Первая ссылка должна работать до истечения 15 минут.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Сохранение и истечение входа</strong><span class="hint">Откройте CRM снова на том же устройстве. Вход сохранится. Тест с управляемым временем отдельно проверит продление и выход после 30 дней без посещений.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Выход на одном устройстве</strong><span class="hint">Войдите под одной почтой в двух браузерах и выйдите в первом. Второй должен остаться в CRM.</span></span></label>
+      <label class="check key"><input type="checkbox"><span><strong>Изоляция в обе стороны</strong><span class="hint">Войдите под двумя адресами по письмам из Mailpit. В каждом браузере добавьте контакт с заметкой, группой и напоминанием. Проверьте свои и чужие записи в списке, поиске, группах, фильтре и напоминаниях. Поменяйтесь адресами просмотра и редактирования. Оба браузера должны показать «Контакт не найден». Это отдельный e2e-тест на настоящей базе.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Группы с одинаковым именем</strong><span class="hint">Создайте «Друзья» под обоими адресами. В каждом аккаунте видна одна своя группа. Откройте адрес главной с фильтром на чужую группу. Должен включиться фильтр «Все контакты» для своих записей.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Отказ при прямом запросе</strong><span class="hint">На тестовых записях автотест отправит запросы с номерами чужих контакта и группы. Контакт, заметки и напоминания должны сохраниться, а чужая группа не должна назначаться.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Данные после переноса</strong><span class="hint">Войдите под почтой владелицы. Сверьте числа из проверки переноса и откройте знакомую карточку с группой, заметкой и сроком. Проверьте также контакт без группы.</span></span></label>
+      <label class="check"><input type="checkbox"><span><strong>Демо-данные</strong><span class="hint">Загрузите демо-данные на тестовой базе. Проверьте карточку, заметки и напоминания под почтой владелицы. Войдите под новой почтой и проверьте пустой список.</span></span></label>
+    </div>
+    <details>
+      <summary>Проверки прежних сценариев после входа</summary>
+      <ul>
+        <li>Создайте группы и проверьте порядок, пустое название, слишком длинное имя и повтор. Назначьте группу контакту, смените и снимите её. Проверьте ошибку, если сохранение контакта не прошло.</li>
+        <li>Откройте пустую группу, примените поиск вместе с фильтром, обновите страницу и очистите поиск. Попробуйте адрес с несуществующей группой.</li>
+        <li>У своего контакта задайте, смените и уберите частоту, проверьте срок и заметки. Войдите с той же почтой во втором браузере. Проверьте просроченные и ближайшие будущие контакты, изменение срока заметкой и отметкой «Связались».</li>
+        <li>На тестовом контакте проверьте удаление из карточки и формы. Контакт должен исчезнуть, его группа остаться. Сбои и повтор отправки для исчезнувшей записи проверяются тестами.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section>
+    <h2>Что агент решил сам</h2>
+    <div class="grid">
+      <article class="card"><h3>Текст в интерфейсе</h3><p>Для сбоя отправки предложено «Не получилось отправить ссылку. Попробуй ещё раз».</p></article>
+      <article class="card"><h3>Проверка доступа</h3><p>Сервер проверяет владельца при обращении к данным. В базе хранится отпечаток ссылки — по нему нельзя восстановить саму ссылку.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Что осталось уточнить</h2>
+    <p>Откуда приложение возьмёт вашу почту, которой перейдут существующие записи и демо-данные. Это нужно решить перед реализацией переноса.</p>
+  </section>
+
+  <footer class="meta">
+    <a href="proposal.md">Предложение</a> · <a href="specs/login/spec.md">Требования</a> · <a href="design.md">Дизайн</a> · <a href="tasks.md">Задачи</a>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { seedOwner } from "./seed-owner";
 // Fills an empty database with realistic test contacts and notes.
 // Refuses to run when contacts already exist, so it never mixes or wipes real data.
 import { loadEnvConfig } from "@next/env";
@@ -233,7 +234,7 @@ function randomDateBetween(start: Date, end: Date): Date {
   return new Date(start.getTime() + random() * (end.getTime() - start.getTime()));
 }
 
-type NewContact = typeof contacts.$inferInsert;
+type NewContact = Omit<typeof contacts.$inferInsert, "ownerId">;
 type NewNote = Omit<typeof notes.$inferInsert, "contactId">;
 
 function makeContact(now: Date): { contact: NewContact; contactNotes: NewNote[] } {
@@ -279,6 +280,7 @@ async function main() {
   const db = drizzle(client);
 
   try {
+    const ownerId = await seedOwner(db);
     const [{ value: existing }] = await db.select({ value: count() }).from(contacts);
     if (existing > 0) {
       console.log(`Seed skipped: the database already has ${existing} contacts.`);
@@ -293,7 +295,7 @@ async function main() {
         const batch = generated.slice(start, start + BATCH_SIZE);
         const inserted = await tx
           .insert(contacts)
-          .values(batch.map((item) => item.contact))
+          .values(batch.map((item) => ({ ...item.contact, ownerId })))
           .returning({ id: contacts.id });
 
         const batchNotes = batch.flatMap((item, index) =>

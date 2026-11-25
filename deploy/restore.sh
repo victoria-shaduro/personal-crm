@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+paired=false
+if [[ ${1:-} == --with-image ]]; then
+  paired=true
+  shift
+fi
 if [[ $# != 1 || ! -t 0 ]]; then
-  echo 'Usage from a server terminal: bash deploy/restore.sh <backup-file>' >&2
+  echo 'Usage from a server terminal: bash deploy/restore.sh [--with-image] <backup-file>' >&2
   exit 1
 fi
 backup_file=$(realpath -e -- "$1")
@@ -21,10 +26,29 @@ if [[ -z $app_container ]]; then
 fi
 IMAGE=$(docker inspect --format '{{.Config.Image}}' "$app_container")
 validate_image
+installed_image=$IMAGE
+if [[ $paired == true ]]; then
+  if [[ ! ${backup_file##*/} =~ ^[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-([a-f0-9]{40})\.dump$ ]]; then
+    echo 'Paired restore requires a deployment backup named with its image revision.' >&2
+    exit 1
+  fi
+  IMAGE="${IMAGE%:*}:${BASH_REMATCH[1]}"
+  validate_image
+  docker image inspect "$IMAGE" >/dev/null || docker pull "$IMAGE"
+fi
 PUBLIC_HEALTH_URL=${PUBLIC_HEALTH_URL:-$DEFAULT_PUBLIC_HEALTH_URL}
 database=$(compose exec -T db sh -ec 'printf "%s\n" "${POSTGRES_DB:?}"')
 compose exec -T db pg_restore --file=/dev/null <"$backup_file"
 
+catalog=$(compose exec -T db pg_restore --list <"$backup_file")
+archive_schema=0
+if [[ $catalog == *' TABLE public auth_user '* ]]; then archive_schema=1; fi
+target_schema=$(image_has_login "$IMAGE")
+if [[ $archive_schema != "$target_schema" ]]; then
+  echo 'Backup schema and image do not match. Select the corresponding backup and image.' >&2
+  exit 1
+fi
+printf 'Application image after restore: %s\n' "$IMAGE"
 printf 'Backup file: %s\nDatabase to replace in Docker Compose project prod: %s\n' "$backup_file" "$database"
 printf 'Type yes to replace the database: '
 if ! IFS= read -r confirmation || [[ $confirmation != yes ]]; then
@@ -51,7 +75,7 @@ if [[ -f $RESTORE_STATE ]]; then
   fi
   echo "Resuming an interrupted restore. Safety backup: $safety_backup"
 else
-  safety_backup=$(backup_database "${IMAGE##*:}")
+  safety_backup=$(backup_database "${installed_image##*:}")
   echo "Safety backup completed: $safety_backup"
 fi
 
@@ -65,7 +89,12 @@ compose exec -T db sh -ec '
 compose exec -T db sh -ec '
   exec pg_restore --no-password --single-transaction --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"
 ' <"$backup_file"
-rm -- "$RESTORE_STATE"
-compose start app
+if [[ $paired == true ]]; then
+  compose up -d --no-deps --pull never --wait --wait-timeout 120 app
+else
+  compose start app
+fi
 bash deploy/smoke.sh "${IMAGE##*:}" "$PUBLIC_HEALTH_URL"
+if [[ $paired == true ]]; then record_release; fi
+rm -- "$RESTORE_STATE"
 echo "Database restore completed: $backup_file"

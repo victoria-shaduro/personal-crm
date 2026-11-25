@@ -51,3 +51,15 @@ record_release() {
   printf '%s\n' "$IMAGE" > .current-image.tmp
   mv .current-image.tmp .current-image
 }
+
+database_has_login() {
+  compose exec -T db sh -ec 'exec psql -XAt --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' <<'SQL'
+SELECT CASE WHEN to_regclass('public.auth_user') IS NULL THEN '0' ELSE '1' END;
+SQL
+}
+
+image_has_login() {
+  local label
+  label=$(docker image inspect --format '{{index .Config.Labels "io.personal-crm.login-schema"}}' "$1") || return
+  if [[ $label == 1 ]]; then echo 1; else echo 0; fi
+}

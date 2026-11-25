@@ -10,9 +10,19 @@ lock_deployment
 trap 'echo "Deployment failed; no automatic rollback was performed." >&2' ERR
 
 require_no_pending_restore
-backup_before_deploy
 compose config --quiet
 compose pull app db
+current_container=$(installed_app_container)
+if [[ -n $current_container ]]; then
+  # Inspect the installed schema before changing either service.
+  compose start --wait --wait-timeout 120 db
+  login_schema=$(database_has_login)
+  if [[ $login_schema == 0 ]]; then
+    echo 'Stopping the previous application before the login transition backup.'
+    compose stop app
+  fi
+fi
+backup_before_deploy
 compose up -d --wait --wait-timeout 120 db
 echo 'Applying migrations before starting the new application image.'
 compose run --rm --no-deps --pull never migrate

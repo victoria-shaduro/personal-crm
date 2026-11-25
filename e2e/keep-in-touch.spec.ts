@@ -1,3 +1,4 @@
+import { login } from "./login-helper";
 import { randomUUID } from "node:crypto";
 import { expect, test as base, type Page } from "@playwright/test";
 import postgres from "postgres";
@@ -5,9 +6,11 @@ import postgres from "postgres";
 type TestContact = { name: string; deadline?: Date; about?: string };
 
 const test = base.extend<{
+  email: string;
   database: postgres.Sql;
   createContact: (contact: TestContact) => Promise<number>;
 }>({
+  email: async ({ page }, provide) => provide(await login(page)),
   database: async ({}, provide) => {
     const testDatabaseUrl = process.env.GROUPS_TEST_DATABASE_URL;
     if (!testDatabaseUrl || !["127.0.0.1", "localhost"].includes(new URL(testDatabaseUrl).hostname)) {
@@ -20,13 +23,13 @@ const test = base.extend<{
       await database.end();
     }
   },
-  createContact: async ({ database }, provide) => {
+  createContact: async ({ database, email }, provide) => {
     const ids: number[] = [];
     try {
       await provide(async ({ name, deadline, about }) => {
         const [{ id }] = await database<{ id: number }[]>`insert into contacts
-          (name, about, keep_in_touch_interval_days, next_contact_at)
-          values (${name}, ${about ?? null}, ${deadline ? 7 : null}, ${deadline ?? null}) returning id`;
+          (owner_id, name, about, keep_in_touch_interval_days, next_contact_at)
+          values ((select id from auth_user where email = ${email}), ${name}, ${about ?? null}, ${deadline ? 7 : null}, ${deadline ?? null}) returning id`;
         ids.push(id);
         return id;
       });
@@ -71,7 +74,7 @@ async function rejectScheduleChanges(database: postgres.Sql, id: number, savedDe
   }
 }
 
-test("sets, changes and removes a contact frequency, preserving the note and draft", async ({ page, browser, database, createContact }) => {
+test("sets, changes and removes a contact frequency, preserving the note and draft", async ({ page, browser, database, createContact, email }) => {
   const name = `Frequency ${randomUUID()}`;
   const id = await createContact({ name });
   const cardPath = `/contacts/${id}`;
@@ -109,6 +112,7 @@ test("sets, changes and removes a contact frequency, preserving the note and dra
   await expect(cardDeadline(page)).toHaveAttribute("datetime", firstDeadline);
   const otherPage = await browser.newPage({ timezoneId: "Pacific/Kiritimati" });
   try {
+    await login(otherPage, email);
     await otherPage.goto(new URL(cardPath, page.url()).href);
     await expect(otherPage.getByRole("combobox", { name: "Частота общения" })).toHaveText("Раз в неделю");
     await expect(cardDeadline(otherPage)).toHaveText(firstDate);

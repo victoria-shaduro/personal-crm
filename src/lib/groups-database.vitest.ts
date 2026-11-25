@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { createContact, deleteContact, updateContact } from "@/app/contacts/actions";
+import { addNote, markContacted, updateKeepInTouch, createContact, deleteContact, updateContact } from "@/app/contacts/actions";
 import { createGroup } from "@/app/groups/actions";
 import * as schema from "@/db/schema";
 import { getContact, getContactNotes, listContacts, listKeepInTouchContacts } from "@/lib/contacts";
@@ -19,6 +19,8 @@ let client: ReturnType<typeof postgres> | undefined;
 let database: ReturnType<typeof drizzle<typeof schema>>;
 let legacyId: number;
 
+let testOwner: string;
+vi.mock("@/lib/current-user", () => ({ ownerId: async () => testOwner }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/db", () => ({ get db() { return database; } }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -54,7 +56,7 @@ function contactForm(name: string, groupId?: number | null) {
 
 async function insertGroup(name: string) {
   const [group] = await database.insert(schema.groups)
-    .values({ name, nameKey: name.toLocaleLowerCase("ru") }).returning();
+    .values({ ownerId: testOwner, name, nameKey: name.toLocaleLowerCase("ru") }).returning();
   return group;
 }
 
@@ -74,7 +76,7 @@ describe.runIf(Boolean(testDatabaseUrl))("groups with PostgreSQL", () => {
     admin = postgres(url.toString());
     await admin`create database ${admin(databaseName)}`;
     url.pathname = `/${databaseName}`;
-    const connection = postgres(url.toString());
+    const connection = postgres(url.toString(), { connection: { "crm.owner_email": "owner@example.org" } });
     client = connection;
     database = drizzle(connection, { schema });
 
@@ -87,6 +89,7 @@ describe.runIf(Boolean(testDatabaseUrl))("groups with PostgreSQL", () => {
     legacyId = legacy.id;
     await connection`insert into notes (contact_id, body) values (${legacyId}, 'Прежняя заметка')`;
     await applyMigrations(connection, migrations.slice(2));
+    testOwner = (await database.select().from(schema.user))[0].id;
   });
 
   afterAll(async () => {
@@ -183,6 +186,33 @@ describe.runIf(Boolean(testDatabaseUrl))("groups with PostgreSQL", () => {
     expect(await updateContact(id, {}, contactForm("Имя после ошибки", 2_147_483_647)))
       .toHaveProperty("errors.groupId");
     expect(await getContact(id)).toMatchObject({ name: "Имя до ошибки", groupId: group.id });
+  });
+
+  test("another owner cannot modify the contact or assign its group", async () => {
+    const original = testOwner;
+    const group = await insertGroup("Shared test name");
+    const id = await addContact("Protected contact", group.id);
+    const [other] = await database.insert(schema.user).values({ id: randomUUID(), email: "other@example.org", name: "" }).returning();
+    testOwner = other.id;
+    try {
+      expect(await createGroup({}, groupForm(group.name))).toHaveProperty("savedAt");
+      expect(await createContact({}, contactForm("Invalid group", group.id))).toHaveProperty("errors.groupId");
+      const otherId = await addContact("Other contact", null);
+      expect(await updateContact(otherId, {}, contactForm("Rejected group", group.id))).toHaveProperty("errors.groupId");
+      expect(await getContact(otherId)).toMatchObject({ name: "Other contact", groupId: null });
+      expect(await updateContact(id, {}, contactForm("Changed"))).toEqual({ message: "Контакт не найден." });
+      const form = new FormData();
+      form.set("body", "Rejected");
+      form.set("intervalDays", "7");
+      for (const action of [addNote, markContacted, updateKeepInTouch]) {
+        expect(await action(id, {}, form)).toHaveProperty("error", "Контакт не найден.");
+      }
+      expect(await deleteContact(id, {}, form)).toHaveProperty("message", "Контакт не найден.");
+    } finally {
+      testOwner = original;
+    }
+    expect(await getContact(id)).toMatchObject({ name: "Protected contact", groupId: group.id, nextContactAt: null });
+    expect(await getContactNotes(id)).toEqual([]);
   });
 
   test("deleting a contact leaves its group available", async () => {

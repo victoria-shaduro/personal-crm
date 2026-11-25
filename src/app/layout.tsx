@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, JetBrains_Mono, Manrope } from "next/font/google";
 import Link from "next/link";
 
+import { Suspense } from "react";
+import { currentUser } from "@/lib/current-user";
+import { logout } from "./login/actions";
+import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/icons";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -51,6 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 Узелок
               </span>
             </Link>
+            <Suspense><AccountMenu /></Suspense>
           </div>
         </header>
         <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-6 sm:px-6 sm:py-10">
@@ -60,4 +65,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </body>
     </html>
   );
+}
+
+async function AccountMenu() {
+  const user = await currentUser();
+  return user ? <form action={logout} className="ml-auto flex flex-wrap items-center justify-end gap-2">
+    <span className="text-sm break-all">{user.email}</span><Button type="submit" variant="outline">Выйти</Button>
+  </form> : null;
 }
