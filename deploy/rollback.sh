@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 source "$(dirname -- "$0")/common.sh"
+select_environment "${2:-prod}"
 require_env
 lock_deployment
 require_no_pending_restore
@@ -24,6 +25,6 @@ if [[ $target_schema != "$database_schema" ]]; then
   exit 1
 fi
 compose up -d --no-deps --pull never --wait --wait-timeout 120 app
-bash deploy/smoke.sh "${IMAGE##*:}" "$PUBLIC_HEALTH_URL"
+bash deploy/smoke.sh "${IMAGE##*:}" "$PUBLIC_HEALTH_URL" "$PROJECT"
 record_release
 echo "Manual rollback completed: $IMAGE"

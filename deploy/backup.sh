@@ -81,7 +81,7 @@ prune_backups() (
       archives+=("$archive")
     fi
   done
-  for ((index = 0; index < ${#archives[@]} - 5; index++)); do
+  for ((index = 0; index < ${#archives[@]} - 7; index++)); do
     rm -- "${archives[index]}"
   done
 )

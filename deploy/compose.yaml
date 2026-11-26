@@ -1,11 +1,9 @@
 x-logging: &logging
-  driver: local
-  options:
-    max-size: "10m"
-    max-file: "3"
+  driver: journald
 
 x-app: &app
   image: ${IMAGE:?IMAGE must be a commit-tagged GHCR image}
+  mem_limit: ${APP_MEMORY_LIMIT:-0}
   environment:
     DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in the server .env}
   logging: *logging
@@ -17,6 +15,7 @@ x-app: &app
 services:
   db:
     image: postgres:18-bookworm@sha256:f1ea2a1a4fb7b68d4836be1fdcb8a6466a89b072158bf9d97663600538c294c5
+    mem_limit: ${DB_MEMORY_LIMIT:-0}
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in the server .env}
@@ -43,7 +42,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:?set SMTP_PASSWORD}
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${APP_HOST_PORT:-3000}:3000"
     init: true
     healthcheck:
       test:
