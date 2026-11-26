@@ -1,10 +1,28 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 umask 077
-DEPLOY_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+DEPLOY_DIR=$(cd -- "${CRM_DEPLOY_DIR:-$(dirname -- "${BASH_SOURCE[0]}")/..}" && pwd -P)
 RESTORE_STATE="$DEPLOY_DIR/.restore-in-progress"
 DEFAULT_PUBLIC_HEALTH_URL=https://app.xn----7sbgnddegvj7a8c6i.xn--p1ai/health
+STAGING_ORIGIN=https://test-app.xn----7sbgnddegvj7a8c6i.xn--p1ai
 cd "$DEPLOY_DIR"
+
+select_environment() {
+  PROJECT=$1
+  if [[ $PROJECT == staging && $DEPLOY_DIR != *-staging ]] || [[ $PROJECT == prod && $DEPLOY_DIR == *-staging ]]; then
+    echo "Deployment directory does not match the $PROJECT environment." >&2
+    return 1
+  fi
+  case "$PROJECT" in
+    prod) ;;
+    staging)
+      DEFAULT_PUBLIC_HEALTH_URL="$STAGING_ORIGIN/health"
+      export APP_HOST_PORT=3001 APP_MEMORY_LIMIT=384m DB_MEMORY_LIMIT=256m
+      export BETTER_AUTH_URL="$STAGING_ORIGIN"
+      ;;
+    *) echo "Unknown deployment environment: $PROJECT" >&2; return 1 ;;
+  esac
+}
 
 require_env() {
   [[ -f .env ]] || { echo 'Create the server .env before deploying.' >&2; exit 1; }
@@ -26,8 +44,17 @@ require_no_pending_restore() {
 }
 
 compose() {
-  docker compose -p prod --project-directory "$DEPLOY_DIR" \
+  local project=${PROJECT:-prod}
+  if [[ $project == prod && $DEPLOY_DIR == *-staging ]]; then
+    echo 'Select the staging environment in the staging directory.' >&2
+    return 1
+  fi
+  docker compose -p "$project" --project-directory "$DEPLOY_DIR" \
     --env-file "$DEPLOY_DIR/.env" -f "$DEPLOY_DIR/deploy/compose.yaml" "$@"
+}
+
+database_query() {
+  compose exec -T db sh -ec 'exec psql -XAt --no-password -v ON_ERROR_STOP=1 --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' <<< "$1"
 }
 
 is_release_image() {
@@ -53,9 +80,7 @@ record_release() {
 }
 
 database_has_login() {
-  compose exec -T db sh -ec 'exec psql -XAt --username="$POSTGRES_USER" --dbname="$POSTGRES_DB"' <<'SQL'
-SELECT CASE WHEN to_regclass('public.auth_user') IS NULL THEN '0' ELSE '1' END;
-SQL
+  database_query "SELECT CASE WHEN to_regclass('public.auth_user') IS NULL THEN '0' ELSE '1' END;"
 }
 
 image_has_login() {
