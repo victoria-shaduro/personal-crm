@@ -29,7 +29,7 @@ if [[ $PROJECT == prod ]]; then
       compose stop app
     fi
   fi
-  backup_before_deploy
+  backup_production deploy
 fi
 compose up -d --wait --wait-timeout 120 db
 if [[ $PROJECT == staging && $(database_query "SELECT to_regclass('public.contacts') IS NOT NULL;") != t ]]; then
@@ -43,7 +43,6 @@ bash deploy/smoke.sh "${IMAGE##*:}" "$PUBLIC_HEALTH_URL" "$PROJECT"
 record_release
 if [[ $PROJECT == prod ]]; then
   bash deploy/cleanup.sh
-  prune_backups
 fi
 compose ps
 echo "Deployment succeeded: $IMAGE"

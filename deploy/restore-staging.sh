@@ -12,7 +12,7 @@ export LC_ALL=C
 shopt -s nullglob
 backup=''
 for candidate in "$backup_dir"/*.dump; do
-  if [[ -f $candidate && ! -L $candidate && -s $candidate ]]; then
+  if [[ ${candidate##*/} != *-restore-* && -f $candidate && ! -L $candidate && -s $candidate ]]; then
     backup=$candidate
   fi
 done

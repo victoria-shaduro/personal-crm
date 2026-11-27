@@ -1,9 +1,8 @@
-name: Deploy production and staging
+name: Deploy staging
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,36 +34,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-  deploy-production:
-    name: Deploy production
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    concurrency:
-      group: personal-crm-production
-      queue: max
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Check out the commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Deploy production
-        run: bash deploy/ci.sh prod
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
-          DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
-          PUBLIC_HEALTH_URL: ${{ vars.PUBLIC_HEALTH_URL }}
-
   deploy-staging:
     name: Deploy staging
-    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15

@@ -1,0 +1,68 @@
+name: Deploy prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit SHA (leave empty for the last successful staging deployment)
+        type: string
+      rollback:
+        description: Roll back to the previous production image
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-crm-production
+  queue: max
+
+jobs:
+  deploy:
+    name: Deploy production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Deploy production
+        run: bash deploy/ci.sh prod
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROD_SHA: ${{ inputs.sha }}
+          PROD_ROLLBACK: ${{ inputs.rollback }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+          PUBLIC_HEALTH_URL: ${{ vars.PUBLIC_HEALTH_URL }}
+
+  cleanup-registry:
+    name: Clean up GHCR builds
+    if: ${{ !inputs.rollback }}
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: personal-crm-build
+      queue: max
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Delete old builds
+        run: bash deploy/cleanup-registry.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
