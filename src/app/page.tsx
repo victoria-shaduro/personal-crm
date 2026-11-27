@@ -13,8 +13,8 @@ import { FlashToast } from "@/components/flash-toast";
 import { KeepInTouchList } from "@/components/keep-in-touch-list";
 import { buttonVariants } from "@/components/ui/button";
 import { parseContactGroupFilter } from "@/lib/contact-list-filters";
-import { listContacts, listKeepInTouchContacts, parseContactId } from "@/lib/contacts";
-import { pluralize } from "@/lib/format";
+import { listContacts, listKeepInTouchContacts, listUpcomingBirthdays, parseContactId } from "@/lib/contacts";
+import { formatBirthday, pluralize } from "@/lib/format";
 import { listGroups } from "@/lib/groups";
 
 // The layout's title template skips its own segment, so the name is spelled out
@@ -51,6 +51,13 @@ export default function ContactsPage({ searchParams }: PageProps<"/">) {
         </Suspense>
       </section>
 
+      <section aria-labelledby="birthdays-heading" className="grid gap-4">
+        <h2 id="birthdays-heading" className="font-display text-title font-semibold">Скоро день рождения</h2>
+        <Suspense fallback={<p aria-busy="true" className="text-sm text-muted-foreground">Загружаем дни рождения…</p>}>
+          <UpcomingBirthdays />
+        </Suspense>
+      </section>
+
       <Suspense fallback={<><ContactSearchFallback /><ContactListSkeleton /></>}>
         <ContactListSection searchParams={searchParams} />
       </Suspense>
@@ -62,6 +69,36 @@ async function KeepInTouchSection() {
   await connection();
   const contacts = await listKeepInTouchContacts();
   return <KeepInTouchList contacts={contacts} />;
+}
+
+async function UpcomingBirthdays() {
+  await connection();
+  const birthdays = await listUpcomingBirthdays();
+  if (birthdays.length === 0) {
+    return (
+      <p className="rounded-sm border border-border-strong bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+        В ближайшие дни нет дней рождения
+      </p>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-border-strong rounded-sm border border-border-strong bg-card">
+      {birthdays.map(({ id, name, date }) => (
+        <li key={id}>
+          <Link
+            href={`/contacts/${id}`}
+            className="grid gap-1 rounded-xs px-4 py-3 text-mono-foreground underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring sm:px-5"
+          >
+            <span className="font-display text-xl font-semibold wrap-anywhere">{name}</span>
+            <time dateTime={date.toISOString().slice(0, 10)} className="font-mono text-xs">
+              {formatBirthday(date.getUTCDate(), date.getUTCMonth() + 1)}
+            </time>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 async function ContactListSection({

@@ -41,6 +41,7 @@ async function EditContact({ params }: Pick<PageProps<"/contacts/[id]/edit">, "p
         </CardHeader>
         <CardContent>
           <ContactForm
+            key={[contact.birthDay, contact.birthMonth, contact.birthYear].join("-")}
             action={updateContact.bind(null, contact.id)}
             groups={groups}
             initialGroupId={contact.groupId}
@@ -50,6 +51,9 @@ async function EditContact({ params }: Pick<PageProps<"/contacts/[id]/edit">, "p
               howWeMet: contact.howWeMet ?? "",
               phone: contact.phone ?? "",
               email: contact.email ?? "",
+              birthDay: contact.birthDay?.toString() ?? "",
+              birthMonth: contact.birthMonth?.toString() ?? "",
+              birthYear: contact.birthYear?.toString() ?? "",
             }}
             submitLabel="Сохранить"
             cancelHref={`/contacts/${contact.id}`}
