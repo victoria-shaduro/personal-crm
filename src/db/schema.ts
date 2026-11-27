@@ -5,6 +5,7 @@ import {
   index,
   integer,
   pgTable,
+  smallint,
   text,
   timestamp,
   unique,
@@ -36,6 +37,9 @@ export const contacts = pgTable(
     phone: text("phone"),
     email: text("email"),
     groupId: integer("group_id"),
+    birthMonth: smallint("birth_month"),
+    birthDay: smallint("birth_day"),
+    birthYear: smallint("birth_year"),
     keepInTouchIntervalDays: integer("keep_in_touch_interval_days"),
     nextContactAt: timestamp("next_contact_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -50,6 +54,12 @@ export const contacts = pgTable(
     index("contacts_name_idx").on(table.name),
     index("contacts_group_id_idx").on(table.groupId),
     index("contacts_next_contact_at_id_idx").on(table.nextContactAt, table.id),
+    check("contacts_birth_date_check", sql`
+      (${table.birthMonth} IS NULL AND ${table.birthDay} IS NULL AND ${table.birthYear} IS NULL)
+      OR (${table.birthMonth} IS NOT NULL AND ${table.birthMonth} BETWEEN 1 AND 12
+        AND ${table.birthDay} IS NOT NULL AND ${table.birthDay} BETWEEN 1 AND 31
+        AND (${table.birthYear} IS NULL OR ${table.birthYear} BETWEEN 1 AND 9999))
+    `),
     check("contacts_keep_in_touch_check", sql`
       (${table.keepInTouchIntervalDays} IS NULL AND ${table.nextContactAt} IS NULL)
       OR (${table.keepInTouchIntervalDays} IS NOT NULL

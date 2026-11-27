@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getContact, getContactNotes, parseContactId } from "@/lib/contacts";
-import { formatDate, formatDateTime, formatPlannedContactDate, toTelHref } from "@/lib/format";
+import { formatBirthday, formatDate, formatDateTime, formatPlannedContactDate, toTelHref } from "@/lib/format";
 import { cn } from "cn";
 
 // Note stripes take turns through the landing threads
@@ -125,6 +125,11 @@ async function ContactDetails({
             <Detail label="Откуда знакомы" className="sm:col-span-2">
               {contact.howWeMet}
             </Detail>
+            {contact.birthDay !== null && contact.birthMonth !== null ? (
+              <Detail label="Дата рождения">
+                {formatBirthday(contact.birthDay, contact.birthMonth, contact.birthYear)}
+              </Detail>
+            ) : null}
             <Detail label="Группа">
               <span className="wrap-anywhere">{contact.groupName ?? "Без группы"}</span>
             </Detail>

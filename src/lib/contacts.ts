@@ -1,11 +1,12 @@
 import "server-only";
 
-import { and, asc, desc, eq, getTableColumns, gte, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { cache } from "react";
 
 import { ownerId } from "./current-user";
 import { db } from "@/db";
 import { contacts, groups, notes } from "@/db/schema";
+import { findUpcomingBirthdays } from "@/lib/birthdays";
 import type { ContactGroupFilter } from "@/lib/contact-list-filters";
 
 // "Ё" and "е" are used interchangeably in Russian names, so search treats them as equal
@@ -41,6 +42,19 @@ export async function listContacts(query: string, group: ContactGroupFilter = nu
 }
 
 export type ContactListItem = Awaited<ReturnType<typeof listContacts>>[number];
+
+export async function listUpcomingBirthdays(now = new Date()) {
+  const candidates = await db
+    .select({
+      id: contacts.id,
+      name: contacts.name,
+      birthMonth: contacts.birthMonth,
+      birthDay: contacts.birthDay,
+    })
+    .from(contacts)
+    .where(and(eq(contacts.ownerId, await ownerId()), isNotNull(contacts.birthDay)));
+  return findUpcomingBirthdays(candidates, now);
+}
 
 export async function listKeepInTouchContacts(now = new Date()) {
   const owned = eq(contacts.ownerId, await ownerId());

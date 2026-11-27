@@ -28,7 +28,15 @@ const EMPTY_VALUES: ContactFormValues = {
   howWeMet: "",
   phone: "",
   email: "",
+  birthDay: "",
+  birthMonth: "",
+  birthYear: "",
 };
+
+const monthFormat = new Intl.DateTimeFormat("ru-RU", { month: "long", timeZone: "UTC" });
+const MONTH_NAMES = Array.from({ length: 12 }, (_, index) =>
+  monthFormat.format(new Date(Date.UTC(2000, index, 1))),
+);
 
 type ContactFormProps = {
   action: (
@@ -54,6 +62,9 @@ export function ContactForm({
 }: ContactFormProps) {
   const [state, formAction, pending] = useActionState(action, {});
   const groupInputId = useId();
+  const birthdayId = useId();
+  const birthdayFeedbackId = `${birthdayId}-feedback`;
+  const birthdayError = state.errors?.birthday?.[0];
 
   // Submitting manually (instead of <form action>) skips React's automatic form
   // reset, so a failed save keeps everything the user typed in the fields
@@ -139,6 +150,54 @@ export function ContactForm({
           />
         </FormField>
       </div>
+
+      <fieldset aria-describedby={birthdayFeedbackId} className="grid min-w-0 gap-2.5">
+        <legend className="mb-2.5 font-mono text-xs font-medium tracking-wider text-muted-foreground uppercase">
+          Дата рождения
+        </legend>
+        <div className="grid grid-cols-4 gap-2 sm:gap-4">
+          <FormField field={`${birthdayId}-day`} label="День">
+            <Input
+              id={`${birthdayId}-day`}
+              name="birthDay"
+              inputMode="numeric"
+              defaultValue={initialValues.birthDay}
+              aria-invalid={birthdayError ? true : undefined}
+            />
+          </FormField>
+          <div className="col-span-2 min-w-0">
+            <FormField field={`${birthdayId}-month`} label="Месяц">
+              <NativeSelect
+                id={`${birthdayId}-month`}
+                name="birthMonth"
+                defaultValue={initialValues.birthMonth}
+                aria-invalid={birthdayError ? true : undefined}
+              >
+                <option value="">—</option>
+                {MONTH_NAMES.map((name, index) => (
+                  <option key={name} value={index + 1}>{name}</option>
+                ))}
+              </NativeSelect>
+            </FormField>
+          </div>
+          <FormField field={`${birthdayId}-year`} label="Год">
+            <Input
+              id={`${birthdayId}-year`}
+              name="birthYear"
+              inputMode="numeric"
+              defaultValue={initialValues.birthYear}
+              aria-invalid={birthdayError ? true : undefined}
+            />
+          </FormField>
+        </div>
+        {birthdayError ? (
+          <p id={birthdayFeedbackId} role="alert" className="text-sm text-destructive">
+            {birthdayError}
+          </p>
+        ) : (
+          <p id={birthdayFeedbackId} className="text-sm text-muted-foreground">Год можно не указывать.</p>
+        )}
+      </fieldset>
 
       <FormField field={groupInputId} label="Группа" error={state.errors?.groupId}>
         <NativeSelect

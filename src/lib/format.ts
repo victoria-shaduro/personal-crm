@@ -21,6 +21,25 @@ const plannedContactDateFormat = new Intl.DateTimeFormat("ru-RU", {
   timeZone: "Asia/Novosibirsk",
 });
 
+const birthdayDateFormat = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+
+const fullBirthdayDateFormat = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+export function formatBirthday(day: number, month: number, year: number | null = null): string {
+  const date = new Date(0);
+  date.setUTCFullYear(year ?? 2000, month - 1, day);
+  return (year === null ? birthdayDateFormat : fullBirthdayDateFormat).format(date);
+}
+
 export function formatPlannedContactDate(date: Date): string {
   return plannedContactDateFormat.format(date);
 }

@@ -6,10 +6,10 @@ import { parseGroupId } from "@/lib/group-form";
 
 export const CONTACT_FIELDS = ["name", "about", "howWeMet", "phone", "email"] as const;
 export type ContactField = (typeof CONTACT_FIELDS)[number];
-export type ContactFormValues = Record<ContactField, string>;
+export type ContactFormValues = Record<ContactField | "birthDay" | "birthMonth" | "birthYear", string>;
 
 export type ContactFormState = {
-  errors?: Partial<Record<ContactField | "groupId", string[]>>;
+  errors?: Partial<Record<ContactField | "groupId" | "birthday", string[]>>;
   message?: string;
 };
 
@@ -25,6 +25,43 @@ const optionalText = (maxLength: number, tooLongMessage: string) =>
   z.string().trim().max(maxLength, tooLongMessage).transform(emptyToNull);
 
 const GROUP_SELECTION_ERROR = "Выберите группу из списка.";
+const INVALID_BIRTHDAY = "Укажите корректную дату рождения.";
+
+const birthdayPart = z.string({ error: INVALID_BIRTHDAY }).trim();
+const birthdaySchema = z.object({
+  day: birthdayPart,
+  month: birthdayPart,
+  year: birthdayPart,
+}).transform(({ day, month, year }, context) => {
+  if (day === "" && month === "" && year === "") {
+    return { birthDay: null, birthMonth: null, birthYear: null };
+  }
+
+  if (day === "" || month === "") {
+    context.addIssue({ code: "custom", message: "Укажите день и месяц рождения." });
+    return z.NEVER;
+  }
+
+  const birthDay = Number(day);
+  const birthMonth = Number(month);
+  const birthYear = year === "" ? null : Number(year);
+  if (!/^\d{1,2}$/.test(day) || birthDay < 1 || birthDay > 31
+    || !/^\d{1,2}$/.test(month) || birthMonth < 1 || birthMonth > 12
+    || (birthYear !== null && (!/^\d{1,4}$/.test(year) || birthYear < 1))) {
+    context.addIssue({ code: "custom", message: INVALID_BIRTHDAY });
+    return z.NEVER;
+  }
+
+  // A leap year lets a birthday on February 29 be saved with an unknown year.
+  const date = new Date(0);
+  date.setUTCFullYear(birthYear ?? 2000, birthMonth - 1, birthDay);
+  if (date.getUTCMonth() !== birthMonth - 1) {
+    context.addIssue({ code: "custom", message: INVALID_BIRTHDAY });
+    return z.NEVER;
+  }
+
+  return { birthDay, birthMonth, birthYear };
+});
 
 export const contactSchema = z.object({
   name: z
@@ -56,7 +93,8 @@ export const contactSchema = z.object({
     .refine((value) => value === "" || parseGroupId(value) !== null, GROUP_SELECTION_ERROR)
     .transform(parseGroupId)
     .optional(),
-});
+  birthday: birthdaySchema.optional(),
+}).transform(({ birthday, ...contact }) => ({ ...contact, ...birthday }));
 
 export const noteSchema = z
   .string()
@@ -69,6 +107,13 @@ export function readContactForm(formData: FormData) {
     const value = formData.get(field);
     return typeof value === "string" ? value : "";
   };
+  const day = formData.get("birthDay");
+  const month = formData.get("birthMonth");
+  const year = formData.get("birthYear");
+  // Older forms omit all three fields. Empty fields in the current form clear the date.
+  const birthday = day === null && month === null && year === null
+    ? undefined
+    : { day: day ?? "", month: month ?? "", year: year ?? "" };
   return {
     name: read("name"),
     about: read("about"),
@@ -76,6 +121,7 @@ export function readContactForm(formData: FormData) {
     phone: read("phone"),
     email: read("email"),
     groupId: formData.get("groupId") ?? undefined,
+    birthday,
   };
 }
 
