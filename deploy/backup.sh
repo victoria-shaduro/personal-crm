@@ -16,7 +16,7 @@ installed_app_container() {
 
 backup_database() (
   set -e
-  local revision=$1 timestamp archive partial
+  local revision=$1 kind=$2 timestamp archive partial
   mkdir -p -- "$BACKUP_DIR"
   if [[ -L $BACKUP_DIR || ! -O $BACKUP_DIR ]]; then
     echo 'The backup directory must belong to the deploy user and be a real directory.' >&2
@@ -24,7 +24,11 @@ backup_database() (
   fi
   chmod 700 -- "$BACKUP_DIR"
   timestamp=$(date -u +%Y%m%dT%H%M%S.%NZ)
-  archive="$BACKUP_DIR/$timestamp-$revision.dump"
+  if [[ $kind == deploy ]]; then
+    archive="$BACKUP_DIR/$timestamp-$revision.dump"
+  else
+    archive="$BACKUP_DIR/$timestamp-$kind-$revision.dump"
+  fi
   if [[ -e $archive || -L $archive ]]; then
     echo "Backup already exists: $archive" >&2
     exit 1
@@ -42,13 +46,16 @@ backup_database() (
   printf '%s\n' "$archive"
 )
 
-backup_before_deploy() {
-  local container prior_image revision=unversioned db_container volume archive
+backup_production() {
+  local kind=$1 container prior_image revision=unversioned db_container volume archive
   container=$(installed_app_container)
   if [[ -n $container ]]; then
     prior_image=$(docker inspect --format '{{.Config.Image}}' "$container")
   elif [[ -f .current-image ]]; then
     prior_image=$(cat .current-image)
+  elif [[ $kind == daily ]]; then
+    echo 'No production application revision is recorded for the daily backup.' >&2
+    return 1
   else
     prior_image=''
     db_container=$(compose ps --all --quiet db)
@@ -65,19 +72,25 @@ backup_before_deploy() {
     fi
     revision=${prior_image##*:}
   fi
-  echo "Backing up the production database for revision $revision."
-  archive=$(backup_database "$revision")
+  if [[ $kind == daily ]]; then
+    IMAGE=$prior_image
+    validate_image
+  fi
+  echo "Backing up the production database ($kind) for revision $revision."
+  archive=$(backup_database "$revision" "$kind")
   echo "Database backup completed: $archive"
+  prune_backups "$kind"
 }
 
 prune_backups() (
   [[ -d $BACKUP_DIR && ! -L $BACKUP_DIR && -O $BACKUP_DIR ]] || exit 0
-  local LC_ALL=C archive index
+  local LC_ALL=C archive index prefix=''
   local -a archives=()
+  [[ $1 != daily ]] || prefix='daily-'
   shopt -s nullglob
   for archive in "$BACKUP_DIR"/*.dump; do
     [[ -f $archive && ! -L $archive ]] || continue
-    if [[ ${archive##*/} =~ ^[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-([a-f0-9]{40}|unversioned)\.dump$ ]]; then
+    if [[ ${archive##*/} =~ ^[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-${prefix}([a-f0-9]{40}|unversioned)\.dump$ ]]; then
       archives+=("$archive")
     fi
   done
@@ -85,3 +98,14 @@ prune_backups() (
     rm -- "${archives[index]}"
   done
 )
+
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  set -Eeuo pipefail
+  [[ ${1:-} == daily ]] || { echo 'Usage: bash deploy/backup.sh daily' >&2; exit 1; }
+  source "$(dirname -- "$0")/common.sh"
+  select_environment prod
+  require_env
+  lock_deployment
+  require_no_pending_restore
+  backup_production daily
+fi

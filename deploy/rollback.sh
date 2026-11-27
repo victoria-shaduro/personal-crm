@@ -5,23 +5,28 @@ select_environment "${2:-prod}"
 require_env
 lock_deployment
 require_no_pending_restore
+if [[ -n ${3:-} ]]; then
+  tar -xzf "$3" -C "$DEPLOY_DIR"
+fi
 PUBLIC_HEALTH_URL=${PUBLIC_HEALTH_URL:-$DEFAULT_PUBLIC_HEALTH_URL}
 IMAGE=$(cat .current-image)
-export IMAGE
+validate_image
 running=$(compose ps -q app)
 actual=''
 [[ -z $running ]] || actual=$(docker inspect --format '{{.Config.Image}}' "$running")
-if [[ $actual == "$IMAGE" ]]; then
+if [[ -n ${1:-} ]]; then
+  IMAGE=$1
+elif [[ $actual == "$IMAGE" ]]; then
+  [[ -f .previous-image ]] || { echo 'No previous release is recorded.' >&2; exit 1; }
   IMAGE=$(cat .previous-image)
 fi
-IMAGE=${1:-$IMAGE}
 validate_image
 # Roll back the application only. Database migrations are never reversed here.
 docker image inspect "$IMAGE" >/dev/null
 target_schema=$(image_has_login "$IMAGE")
 database_schema=$(database_has_login)
 if [[ $target_schema != "$database_schema" ]]; then
-  echo 'This image requires a matching database backup. Use restore.sh --with-image <backup-file>.' >&2
+  echo 'The previous image is incompatible with the installed database schema.' >&2
   exit 1
 fi
 compose up -d --no-deps --pull never --wait --wait-timeout 120 app
