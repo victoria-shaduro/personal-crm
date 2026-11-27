@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-BACKUP_DIR="$(dirname -- "$DEPLOY_DIR")/personal-crm-backups"
-
 installed_app_container() {
   local containers
   containers=$(docker ps --all --quiet \

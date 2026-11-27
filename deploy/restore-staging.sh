@@ -7,11 +7,10 @@ validate_image
 require_env
 lock_deployment
 
-backup_dir="$(dirname -- "$DEPLOY_DIR")/personal-crm-backups"
 export LC_ALL=C
 shopt -s nullglob
 backup=''
-for candidate in "$backup_dir"/*.dump; do
+for candidate in "$BACKUP_DIR"/*.dump; do
   if [[ ${candidate##*/} != *-restore-* && -f $candidate && ! -L $candidate && -s $candidate ]]; then
     backup=$candidate
   fi

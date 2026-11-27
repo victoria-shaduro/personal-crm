@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 umask 077
 DEPLOY_DIR=$(cd -- "${CRM_DEPLOY_DIR:-$(dirname -- "${BASH_SOURCE[0]}")/..}" && pwd -P)
+BACKUP_DIR="$(dirname -- "$DEPLOY_DIR")/personal-crm-backups"
 RESTORE_STATE="$DEPLOY_DIR/.restore-in-progress"
 DEFAULT_PUBLIC_HEALTH_URL=https://app.xn----7sbgnddegvj7a8c6i.xn--p1ai/health
 STAGING_ORIGIN=https://test-app.xn----7sbgnddegvj7a8c6i.xn--p1ai
